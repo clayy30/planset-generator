@@ -33,7 +33,12 @@ def _short(s: str, n: int = 28) -> str:
 
 
 def render_schemdraw_sld(project: "ProjectInput", totals: SystemTotals | None = None) -> str | None:
-    """Return SVG string, or None if schemdraw unavailable / topology unsupported."""
+    """Return SVG string, or None if schemdraw is not installed.
+
+    Any error while actually drawing the diagram propagates to the caller
+    rather than being swallowed here - a rendering bug must surface as a
+    visible failure, never as a silent drop to a lower-quality diagram.
+    """
     if not HAS_SCHEMDRAW:
         return None
 
@@ -56,20 +61,13 @@ def render_schemdraw_sld(project: "ProjectInput", totals: SystemTotals | None = 
     if not use_half and ic != "backfeed_breaker":
         use_half = True  # default residential hybrid presentation
 
-    try:
-        if ic == "backfeed_breaker" and backup not in (
-            "half_home",
-            "full_dual_disco",
-            "critical_loads",
-        ):
-            svg = _draw_backfeed(project, totals, segs, inv_label, cont_a)
-        else:
-            svg = _draw_half_home(
-                project, totals, segs, inv_label, cont_a, disco, pass_a, backup
-            )
-        return svg
-    except Exception:
-        return None
+    if ic == "backfeed_breaker" and backup not in (
+        "half_home",
+        "full_dual_disco",
+        "critical_loads",
+    ):
+        return _draw_backfeed(project, totals, segs, inv_label, cont_a)
+    return _draw_half_home(project, totals, segs, inv_label, cont_a, disco, pass_a, backup)
 
 
 def _drawing():
