@@ -616,46 +616,37 @@
     <div class="kw">PV-2A<span>Attachment / structural</span></div>
   </div>
   <div class="body">
-    <div class="main">
-      <div class="sld-wrap">
+    <div class="main" style="gap:8px;overflow:hidden">
+      <div class="sld-wrap" style="flex:0 0 auto;max-height:3.6in;overflow:hidden;padding:4px">
         {{ svg_attachment }}
       </div>
 
-      <div class="two">
-        <div class="panel">
-          <h2>Racking bill of materials (engineered count)</h2>
+      <div class="two" style="flex:1;min-height:0">
+        <div class="panel" style="overflow:auto">
+          <h2>Racking BOM (from layout)</h2>
           <table class="data">
-            <tr><th>Equipment</th><th>Qty</th><th>Description</th></tr>
-            <tr><td>RAIL</td><td>{{ st.bom.rails }}</td><td>{{ array.structural.rail_model }} (~{{ array.structural.rail_length_ft }}' sticks; field cut/splice)</td></tr>
-            <tr><td>SPLICE</td><td>{{ st.bom.splices }}</td><td>Bonded rail splice as required by row length</td></tr>
+            <tr><th>Item</th><th>Qty</th><th>Spec</th></tr>
+            <tr><td>RAIL</td><td>{{ st.bom.rails }}</td><td>{{ array.structural.rail_model }} (~{{ array.structural.rail_length_ft }}')</td></tr>
+            <tr><td>SPLICE</td><td>{{ st.bom.splices }}</td><td>Bonded splice as needed</td></tr>
             <tr><td>MID CLAMP</td><td>{{ st.bom.mid_clamps }}</td><td>Listed mid clamp</td></tr>
-            <tr><td>END CLAMP</td><td>{{ st.bom.end_clamps }}</td><td>Listed end clamp / stopper</td></tr>
-            <tr><td>ATTACHMENT</td><td>{{ st.bom.attachments }}</td><td>{{ array.structural.attachment_hardware }} @ {{ st.bom.attachment_spacing_in|int }}" OC (rafter)</td></tr>
-            <tr><td>GROUNDING LUG</td><td>{{ st.bom.grounding_lugs }}</td><td>Listed rail lug to EGC</td></tr>
+            <tr><td>END CLAMP</td><td>{{ st.bom.end_clamps }}</td><td>Listed end clamp</td></tr>
+            <tr><td>ATTACHMENT</td><td>{{ st.bom.attachments }}</td><td>{{ array.structural.attachment_hardware }} @ {{ st.bom.attachment_spacing_in|int }}" OC</td></tr>
+            <tr><td>GND LUG</td><td>{{ st.bom.grounding_lugs }}</td><td>Rail lug → EGC</td></tr>
           </table>
-          <ul class="tiny" style="margin-top:4px">
-            {% for n in st.bom.notes %}<li>{{ n }}</li>{% endfor %}
-          </ul>
         </div>
-        <div class="panel">
+        <div class="panel" style="overflow:auto">
           <h2>Structural design basis</h2>
           <table class="data">
-            <tr><td>Roof type / frame</td><td>{{ criteria.roof_type.value.replace('_',' ') }} · {{ criteria.roof_frame }}</td></tr>
-            <tr><td>Wind / exposure / risk</td><td>{{ criteria.wind_speed_mph }} mph · {{ criteria.wind_exposure }} · Cat {{ criteria.risk_category }}</td></tr>
-            <tr><td>Snow</td><td>{{ criteria.snow_load_psf }} psf</td></tr>
-            <tr><td>Array dead load</td><td>
+            <tr><td>Frame</td><td>{{ criteria.roof_frame }}</td></tr>
+            <tr><td>Wind / exp</td><td>{{ criteria.wind_speed_mph }} mph · {{ criteria.wind_exposure }} · Cat {{ criteria.risk_category }}</td></tr>
+            <tr><td>Dead load</td><td>
               <span class="badge {{ 'green' if st.dead_load_ok else 'red' }}">{{ '%.2f'|format(st.array_dead_load_psf) }} psf</span>
-              max design {{ array.structural.max_dead_load_psf }} psf
+              (max {{ array.structural.max_dead_load_psf }})
             </td></tr>
-            <tr><td>Lag / embedment</td><td>{{ array.structural.lag_size }} · min {{ array.structural.lag_embedment_in }}" thread into solid wood</td></tr>
-            <tr><td>Max att. spacing</td><td>{{ array.structural.max_attachment_spacing_in }}" (mfr) · used {{ st.bom.attachment_spacing_in|int }}" (rafter OC)</td></tr>
-            <tr><td>Span table ref</td><td>{{ array.structural.span_table_ref }}</td></tr>
-            <tr><td>PE letter</td><td>{% if array.structural.pe_letter_required %}REQUIRED — {{ array.structural.pe_letter_note }}{% else %}Per AHJ — attach if required for wind/exposure or non-standard framing{% endif %}</td></tr>
+            <tr><td>Lag</td><td>{{ array.structural.lag_size }} · ≥{{ array.structural.lag_embedment_in }}" embed</td></tr>
+            <tr><td>Att. spacing</td><td>{{ st.bom.attachment_spacing_in|int }}" OC (rafter) · mfr max {{ array.structural.max_attachment_spacing_in }}"</td></tr>
+            <tr><td>PE letter</td><td>{% if array.structural.pe_letter_required %}REQUIRED{% else %}Per AHJ{% endif %}</td></tr>
           </table>
-          <p class="tiny" style="margin-top:6px">
-            <strong>Why this beats mill attachment sheets:</strong> counts are derived from the actual placed module grid and rafter spacing,
-            not a static clipboard BOM. Dead load is calculated. Setbacks are enforced in the packer (PV-2). Field PE still governs when AHJ requires stamp.
-          </p>
         </div>
       </div>
     </div>
@@ -684,8 +675,8 @@
     <div class="kw">PV-3<span>One-line · field install</span></div>
   </div>
   <div class="body">
-    <div class="main">
-      <div class="sld-wrap" style="padding:4px;background:#fff">
+    <div class="main" style="overflow:hidden;min-height:0">
+      <div class="sld-wrap" style="flex:1;min-height:0;overflow:hidden;padding:2px;background:#fff;display:flex;align-items:flex-start">
         {{ svg_sld }}
       </div>
     </div>

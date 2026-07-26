@@ -224,24 +224,23 @@ def build_segments(project: ProjectInput, totals: SystemTotals) -> list[Seg]:
 
 
 def generate_sld_svg(project: ProjectInput, totals: SystemTotals) -> str:
-    """Return full SVG string for PV-3."""
+    """Return full SVG string for PV-3 (clean layout, no overlaps)."""
+    from .sld_diagrams import sld_backfeed_svg, sld_half_home_svg
+
     segs = build_segments(project, totals)
     inv = project.inverters[0] if project.inverters else None
     mod = project.modules[0] if project.modules else None
     backup = project.service.backup_mode.value
     ic = project.service.interconnection.value
-    dual = backup in ("half_home", "full_dual_disco") or project.service.num_disconnects >= 2
-    full_dual = backup == "full_dual_disco"
     critical = backup == "critical_loads"
     cont_a = (inv.continuous_ac_a * inv.quantity) if inv else totals.ac_a_continuous
     inv_ocpd = int(totals.max_backfeed_a or max(15, (cont_a * 1.25 + 4) // 5 * 5))
     disco = project.service.disconnect_rating_a
-    pass_a = inv.passthrough_a if inv and inv.passthrough_a else disco
+    pass_a = float(inv.passthrough_a) if inv and inv.passthrough_a else float(disco)
 
     inv_name = f"{inv.manufacturer} {inv.model}" if inv else "HYBRID INVERTER"
     mod_line = (
-        f"(N) {mod.quantity} × {mod.manufacturer} {mod.model} ({mod.pmax_w:.0f}W) = "
-        f"{totals.dc_kw:.2f} kWDC"
+        f"{mod.quantity} × {mod.model} ({mod.pmax_w:.0f}W) = {totals.dc_kw:.2f} kWDC"
         if mod
         else f"{totals.dc_kw:.2f} kWDC"
     )
@@ -249,38 +248,77 @@ def generate_sld_svg(project: ProjectInput, totals: SystemTotals) -> str:
     voc_note = ""
     if totals.string_calcs:
         s0 = totals.string_calcs[0]
-        voc_note = f"String Voc_cold max {s0.string_voc_cold:.0f}V · Isc_par {s0.parallel_isc:.1f}A"
+        voc_note = f"Voc_cold {s0.string_voc_cold:.0f}V · Isc {s0.parallel_isc:.1f}A"
 
-    # Build segment table rows as SVG text
-    table_y = 548
-    seg_lines = []
-    for i, s in enumerate(segs[:6]):
-        y = table_y + 14 + i * 12
+    # Schedule rows — start Y depends on diagram (half-home uses 500+)
+    is_backfeed = ic == "backfeed_breaker" and backup not in (
+        "half_home",
+        "full_dual_disco",
+    )
+    table_y = 390 if is_backfeed else 500
+    row_h = 28
+    seg_lines: list[str] = []
+    for i, s in enumerate(segs[:5]):
+        y = table_y + 18 + i * row_h
+        fr = (s.from_eq[:34] + "…") if len(s.from_eq) > 34 else s.from_eq
+        to = (s.to_eq[:34] + "…") if len(s.to_eq) > 34 else s.to_eq
+        cond = (s.conductors[:70] + "…") if len(s.conductors) > 70 else s.conductors
+        ocpd = (s.ocpd[:50] + "…") if len(s.ocpd) > 50 else s.ocpd
         seg_lines.append(
-            f'<text x="20" y="{y}" font-size="8" font-family="IBM Plex Mono,Consolas,monospace">'
-            f"{s.tag}: {s.from_eq} → {s.to_eq}</text>"
-        )
-        seg_lines.append(
-            f'<text x="20" y="{y+9}" font-size="7.5" fill="#333" font-family="IBM Plex Mono,Consolas,monospace">'
-            f"  {s.conductors} · OCPD: {s.ocpd}</text>"
+            f'<text x="16" y="{y}" font-size="8" font-weight="700" '
+            f'font-family="IBM Plex Mono,Consolas,monospace">{s.tag}</text>'
+            f'<text x="52" y="{y}" font-size="7.5" font-family="Segoe UI,Arial">'
+            f"{fr}  →  {to}</text>"
+            f'<text x="52" y="{y + 11}" font-size="7" fill="#333" '
+            f'font-family="IBM Plex Mono,Consolas,monospace">{cond}</text>'
+            f'<text x="52" y="{y + 21}" font-size="7" fill="#555" '
+            f'font-family="Segoe UI,Arial">OCPD: {ocpd}</text>'
         )
 
-    if dual and not full_dual:
-        return _sld_half_home(
-            project, totals, inv_name, mod_line, n_str, voc_note, cont_a, inv_ocpd,
-            disco, pass_a, critical, seg_lines, segs,
+    feed = _awg_for_amps(disco if not is_backfeed else inv_ocpd)
+    egc = _egc_for_ocpd(disco if not is_backfeed else inv_ocpd)
+    conduit = _conduit_for_fill(4, feed)
+    load_title = "CRITICAL LOADS PANEL" if critical else "BACKED-UP LOAD CENTER #1"
+
+    if is_backfeed:
+        return sld_backfeed_svg(
+            voltage=project.service.voltage,
+            main_a=project.service.main_breaker_a,
+            bus_a=project.service.busbar_a or project.service.main_breaker_a,
+            inv_ocpd=inv_ocpd,
+            cont_a=cont_a,
+            inv_name=inv_name,
+            mod_line=mod_line,
+            bat_kwh=totals.battery_kwh,
+            feed=feed,
+            egc=egc,
+            conduit=conduit,
+            seg_lines=seg_lines,
         )
-    if full_dual:
-        return _sld_full_dual(
-            project, totals, inv_name, mod_line, n_str, voc_note, cont_a, disco, pass_a, seg_lines,
-        )
-    if ic == "backfeed_breaker":
-        return _sld_backfeed(
-            project, totals, inv_name, mod_line, n_str, voc_note, cont_a, inv_ocpd, seg_lines,
-        )
-    return _sld_half_home(
-        project, totals, inv_name, mod_line, n_str, voc_note, cont_a, inv_ocpd,
-        disco, pass_a, critical, seg_lines, segs,
+
+    return sld_half_home_svg(
+        voltage=project.service.voltage,
+        phase=project.service.phase,
+        service_a=project.service.service_a,
+        main_a=project.service.main_breaker_a,
+        bus_a=project.service.busbar_a,
+        disco=disco,
+        pass_a=pass_a,
+        cont_a=cont_a,
+        ac_kw=totals.ac_kw_continuous,
+        inv_name=inv_name,
+        inv_ne_ma=inv.ne_ma if inv else "NEMA 3R",
+        inv_qty=inv.quantity if inv else 1,
+        load_title=load_title,
+        mod_line=mod_line,
+        n_str=n_str,
+        voc_note=voc_note,
+        bat_kwh=totals.battery_kwh,
+        ac_disco_a=project.service.ac_disco_a,
+        feed=feed,
+        egc=egc,
+        conduit=conduit,
+        seg_lines=seg_lines,
     )
 
 
