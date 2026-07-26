@@ -28,10 +28,21 @@ Still **not a PE stamp** — EC/PE/AHJ remain authority. It is a serious design 
 - **PV-6** Labels & placards  
 - **PV-7** QA / AHJ checklist  
 
-## Run
+## Use in the browser (share with a friend)
+
+**One-click (GitHub Codespaces — no local install):**
+
+### https://codespaces.new/clayy30/planset-generator
+
+Creates a cloud environment, starts the app on port 8787, opens the UI.  
+Details: [SHARE.md](./SHARE.md)
+
+Repo: https://github.com/clayy30/planset-generator
+
+## Run locally
 
 ```bash
-cd /Users/cc/planset-generator
+cd planset-generator
 ./run.sh
 # uses python3.13 when available (3.14 may lack pydantic wheels)
 ```
@@ -39,10 +50,10 @@ cd /Users/cc/planset-generator
 Or manually:
 
 ```bash
-cd /Users/cc/planset-generator
 python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+# macOS: brew install poppler   # for cut-sheet appendix rasters
 uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8787
 ```
 
