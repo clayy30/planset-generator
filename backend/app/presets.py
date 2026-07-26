@@ -55,8 +55,8 @@ def duracell_400a_half_home() -> ProjectInput:
         ambient=AmbientDesign(record_low_c=-5, high_2pct_c=35),
         modules=[
             ModuleSpec(
-                manufacturer="Generic Premium",
-                model="450W-144HC",
+                manufacturer="Canadian Solar",
+                model="CS6.1-54TM-H-450",
                 quantity=24,
                 pmax_w=450,
                 vmp=41.5,
@@ -115,7 +115,7 @@ def duracell_400a_half_home() -> ProjectInput:
         strings=[
             StringDesign(
                 name="MPPT1-S1",
-                module_model="450W-144HC",
+                module_model="CS6.1-54TM-H-450",
                 modules_in_series=8,
                 parallel_strings=1,
                 inverter_index=0,
@@ -123,7 +123,7 @@ def duracell_400a_half_home() -> ProjectInput:
             ),
             StringDesign(
                 name="MPPT2-S1",
-                module_model="450W-144HC",
+                module_model="CS6.1-54TM-H-450",
                 modules_in_series=8,
                 parallel_strings=1,
                 inverter_index=0,
@@ -131,7 +131,7 @@ def duracell_400a_half_home() -> ProjectInput:
             ),
             StringDesign(
                 name="MPPT3-S1",
-                module_model="450W-144HC",
+                module_model="CS6.1-54TM-H-450",
                 modules_in_series=8,
                 parallel_strings=1,
                 inverter_index=0,

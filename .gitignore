@@ -13,6 +13,10 @@ output/*
 !output/.gitkeep
 data/projects/*
 !data/projects/.gitkeep
+# keep cut sheets; skip huge catalogs / customer PE letters
+data/equipment/**/IronRidge_Parts_Catalog.pdf
+data/equipment/**/PE Letter*
+data/equipment/**/pages/
 *.log
 .idea/
 .vscode/

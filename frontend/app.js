@@ -358,12 +358,19 @@ async function generate() {
       data.warnings && data.warnings.length
         ? `<p><strong>Warnings:</strong> ${data.warnings.join(" · ")}</p>`
         : `<p>No critical calc warnings.</p>`;
+    const ap = data.appendix;
+    const apHtml = ap
+      ? `<p><strong>Equipment appendix:</strong> ${ap.count} matched cut sheets
+         ${ap.docs && ap.docs.length ? "— " + ap.docs.map((d) => d.filename).slice(0, 6).join(", ") + (ap.docs.length > 6 ? "…" : "") : ""}</p>
+         <p class="hint">Full PDFs: output/${data.project_id}/appendix/</p>`
+      : "";
     box.innerHTML = `
-      <p><strong>Planset ready.</strong></p>
+      <p><strong>Planset ready</strong> (design sheets + auto-matched manufacturer specs).</p>
       <p><a href="${data.url}" target="_blank" rel="noopener">Open planset (print → PDF)</a></p>
       <p class="hint">Project ID: ${data.project_id}</p>
+      ${apHtml}
       ${warns}
-      <p class="hint">Print from browser · paper size 11×17 (ANSI B) landscape · or Save as PDF.</p>
+      <p class="hint">Print · 11×17 ANSI B landscape · includes PV-8 index + PV-A# cut-sheet rasters.</p>
     `;
     loadProjects();
   } catch (e) {

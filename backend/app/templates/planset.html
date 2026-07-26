@@ -1129,5 +1129,94 @@
   </div>
 </section>
 
+{# ===================== PV-8 EQUIPMENT SPEC APPENDIX INDEX ===================== #}
+<section class="sheet" id="PV-8">
+  <div class="banner">
+    <div>
+      <h1>EQUIPMENT SPECIFICATION APPENDIX</h1>
+      <div class="sub">
+        Auto-matched cut sheets from the local equipment library ·
+        {{ matched_specs|length }} documents selected · full PDFs in appendix folder
+      </div>
+    </div>
+    <div class="kw">PV-8<span>Spec index</span></div>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="panel">
+        <h2>Matched manufacturer literature</h2>
+        <p class="tiny">These documents are selected by scoring project modules, inverters, batteries, racking, and interconnection against files in <span class="mono">data/equipment/</span>. Raster pages follow as PV-A1… sheets for print; complete PDFs copy with the project package.</p>
+        <table class="data">
+          <tr><th>#</th><th>Category</th><th>Document</th><th>Match reason</th><th>Score</th></tr>
+          {% for d in matched_specs %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ d.category }}</td>
+            <td>{{ d.title }}</td>
+            <td class="tiny">{{ d.reason }}</td>
+            <td class="mono">{{ '%.1f'|format(d.score) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5">No specs matched — add PDFs under data/equipment/{modules,inverters,batteries,racking,disconnects,structural,labels}/</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% if appendix_meta.warnings %}
+      <div class="warn"><strong>Appendix notes:</strong>
+        <ul>{% for w in appendix_meta.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      <div class="panel tiny">
+        <strong>Library includes:</strong> IronRidge FlashFoot2 (w/ 5/16×4.25 lag), XR10, XR100, UFO clamp, BOSS splice, Halo UltraGrip, Engineering Design Guide, MN DLI NEC label guide, plus project-matched module/inverter/battery/GridBOSS datasheets from this machine.
+        FlashFoot2 cut sheet is the lag-bolt authority for typical IronRidge residential attachments.
+      </div>
+    </div>
+    <aside class="side">
+      <div class="tb-head">TITLE BLOCK</div>
+      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">EQUIPMENT SPEC APPENDIX</div></div>
+      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-8</div></div>
+      <div class="tb-row"><div class="lbl">Docs</div><div class="val">{{ matched_specs|length }} matched</div></div>
+      <div class="tb-row"><div class="lbl">Raster pages</div><div class="val">{{ appendix_pages|length }}</div></div>
+    </aside>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Equipment Specification Appendix Index</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-8</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+{% for ap in appendix_pages %}
+<section class="sheet" id="{{ ap.id }}">
+  <div class="banner">
+    <div>
+      <h1>SPEC · {{ ap.title[:70] }}</h1>
+      <div class="sub">
+        Category: {{ ap.category }} · {{ ap.filename }} · page {{ ap.page }}/{{ ap.pages }} · match: {{ ap.reason }}
+      </div>
+    </div>
+    <div class="kw">{{ ap.id }}<span>Manufacturer cut sheet</span></div>
+  </div>
+  <div class="body sheet-full">
+    <div class="main">
+      <div class="sld-wrap" style="padding:4px;display:flex;align-items:center;justify-content:center;min-height:7.2in;background:#f0f0f0">
+        <img src="{{ ap.img_uri }}" alt="{{ ap.title }}" style="max-width:100%;max-height:7.1in;object-fit:contain;box-shadow:0 1px 4px rgba(0,0,0,0.2)" />
+      </div>
+      <p class="tiny">Manufacturer literature for AHJ submittal. Full multi-page PDF is in the project appendix folder. Do not scale dimensions from this raster for construction — use manufacturer PDF.</p>
+    </div>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">{{ ap.title[:50] }}</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">{{ ap.id }}</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Source</div><div class="val">{{ ap.category }}</div></div>
+  </div>
+</section>
+{% endfor %}
+
 </body>
 </html>

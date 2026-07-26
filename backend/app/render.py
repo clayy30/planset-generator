@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -10,10 +11,17 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
 from .calcs import compute_system, totals_to_dict
+from .equipment_lib import AppendixPackage, appendix_to_dict, build_appendix, match_equipment
 from .layout import compute_structural, structural_to_dict
 from .models import ProjectInput
 
 TEMPLATES = Path(__file__).parent / "templates"
+
+
+def _img_data_uri(path: Path) -> str:
+    raw = path.read_bytes()
+    b64 = base64.b64encode(raw).decode("ascii")
+    return f"data:image/png;base64,{b64}"
 
 
 def _env() -> Environment:
@@ -23,9 +31,13 @@ def _env() -> Environment:
     )
 
 
-def build_context(project: ProjectInput) -> dict[str, Any]:
+def build_context(
+    project: ProjectInput,
+    appendix: AppendixPackage | None = None,
+) -> dict[str, Any]:
     totals = compute_system(project)
     structural = compute_structural(project)
+    matched = appendix.docs if appendix else match_equipment(project)
     meta = project.meta
     addr = meta.address
     full_address = ", ".join(
@@ -95,7 +107,29 @@ def build_context(project: ProjectInput) -> dict[str, Any]:
         {"id": "PV-5", "name": "Wire Schedule & BOM"},
         {"id": "PV-6", "name": "Labels & Placards"},
         {"id": "PV-7", "name": "QA / AHJ Checklist"},
+        {"id": "PV-8", "name": "Equipment Spec Appendix Index"},
     ]
+    # one sheet id per rasterized page
+    appendix_pages: list[dict[str, Any]] = []
+    if appendix and appendix.page_images:
+        n = 0
+        for doc, imgs in appendix.page_images:
+            for pi, img in enumerate(imgs, start=1):
+                n += 1
+                sid = f"PV-A{n}"
+                sheets.append({"id": sid, "name": f"Spec: {doc.title[:40]}"})
+                appendix_pages.append(
+                    {
+                        "id": sid,
+                        "title": doc.title,
+                        "category": doc.category,
+                        "reason": doc.reason,
+                        "page": pi,
+                        "pages": len(imgs),
+                        "filename": doc.path.name,
+                        "img_uri": _img_data_uri(img),
+                    }
+                )
 
     return {
         "project": project,
@@ -114,6 +148,9 @@ def build_context(project: ProjectInput) -> dict[str, Any]:
         "t": totals_to_dict(totals),
         "structural": structural,
         "st": structural_to_dict(structural),
+        "matched_specs": matched,
+        "appendix_pages": appendix_pages,
+        "appendix_meta": appendix_to_dict(appendix) if appendix else {"count": len(matched), "docs": [], "warnings": []},
         "modules_summary": modules_summary,
         "inv_summary": inv_summary,
         "bat_summary": bat_summary,
@@ -127,10 +164,22 @@ def build_context(project: ProjectInput) -> dict[str, Any]:
     }
 
 
-def render_planset_html(project: ProjectInput) -> str:
+def render_planset_html(
+    project: ProjectInput,
+    project_id: str | None = None,
+    build_spec_appendix: bool = True,
+) -> str:
     env = _env()
     tmpl = env.get_template("planset.html")
-    ctx = build_context(project)
+    appendix = None
+    if build_spec_appendix and project_id:
+        appendix = build_appendix(project, project_id)
+    elif build_spec_appendix:
+        # ephemeral id for preview packages
+        import uuid
+
+        appendix = build_appendix(project, str(uuid.uuid4())[:8])
+    ctx = build_context(project, appendix=appendix)
     # SVG must not be HTML-escaped
     ctx["svg_roof"] = Markup(ctx["structural"].svg_roof)
     ctx["svg_attachment"] = Markup(ctx["structural"].svg_attachment)

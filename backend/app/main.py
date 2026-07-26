@@ -87,32 +87,40 @@ def api_preview_calcs(project: ProjectInput):
 
 @app.post("/api/projects/{project_id}/generate")
 def api_generate(project_id: str):
+    from .equipment_lib import appendix_to_dict, build_appendix
+
     rec = storage.get_project(project_id)
     if not rec:
         raise HTTPException(404, "Project not found")
-    html = render_planset_html(rec.project)
+    html = render_planset_html(rec.project, project_id=project_id, build_spec_appendix=True)
     path = storage.write_output(project_id, html)
+    pkg = build_appendix(rec.project, project_id)  # ensure package on disk
     return {
         "project_id": project_id,
         "path": str(path),
         "url": f"/api/projects/{project_id}/planset",
         "warnings": compute_system(rec.project).warnings,
+        "appendix": appendix_to_dict(pkg),
     }
 
 
 @app.post("/api/generate")
 def api_generate_ephemeral(project: ProjectInput):
-    """Generate without saving — returns HTML directly for preview download."""
-    html = render_planset_html(project)
-    # also save under ephemeral id for file access
+    """Save project, generate planset + matched equipment appendix."""
+    from .equipment_lib import appendix_to_dict, build_appendix
+
     rec = storage.save_project(project)
+    html = render_planset_html(rec.project, project_id=rec.id, build_spec_appendix=True)
     path = storage.write_output(rec.id, html)
+    pkg = build_appendix(rec.project, rec.id)
+    totals = compute_system(project)
     return {
         "project_id": rec.id,
         "path": str(path),
         "url": f"/api/projects/{rec.id}/planset",
-        "warnings": compute_system(project).warnings,
-        "quality_flags": compute_system(project).quality_flags,
+        "warnings": totals.warnings,
+        "quality_flags": totals.quality_flags,
+        "appendix": appendix_to_dict(pkg),
     }
 
 
@@ -121,10 +129,40 @@ def api_planset_html(project_id: str):
     rec = storage.get_project(project_id)
     if not rec:
         raise HTTPException(404, "Project not found")
-    # regenerate fresh each time so template updates apply
-    html = render_planset_html(rec.project)
+    html = render_planset_html(rec.project, project_id=project_id, build_spec_appendix=True)
     storage.write_output(project_id, html)
     return HTMLResponse(html)
+
+
+@app.get("/api/projects/{project_id}/appendix")
+def api_appendix(project_id: str):
+    from .equipment_lib import appendix_to_dict, build_appendix
+
+    rec = storage.get_project(project_id)
+    if not rec:
+        raise HTTPException(404, "Project not found")
+    pkg = build_appendix(rec.project, project_id)
+    return appendix_to_dict(pkg)
+
+
+@app.post("/api/preview-equipment")
+def api_preview_equipment(project: ProjectInput):
+    from .equipment_lib import appendix_to_dict, match_equipment
+
+    docs = match_equipment(project)
+    return {
+        "count": len(docs),
+        "docs": [
+            {
+                "title": d.title,
+                "category": d.category,
+                "score": d.score,
+                "reason": d.reason,
+                "filename": d.path.name,
+            }
+            for d in docs
+        ],
+    }
 
 
 @app.get("/api/presets/duracell-400a")
