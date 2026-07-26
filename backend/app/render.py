@@ -1,0 +1,127 @@
+"""Render multi-sheet ANSI B plansets as self-contained HTML (print → PDF)."""
+
+from __future__ import annotations
+
+from datetime import date
+from pathlib import Path
+from typing import Any
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+from .calcs import compute_system, totals_to_dict
+from .models import ProjectInput
+
+TEMPLATES = Path(__file__).parent / "templates"
+
+
+def _env() -> Environment:
+    return Environment(
+        loader=FileSystemLoader(str(TEMPLATES)),
+        autoescape=select_autoescape(["html", "xml"]),
+    )
+
+
+def build_context(project: ProjectInput) -> dict[str, Any]:
+    totals = compute_system(project)
+    meta = project.meta
+    addr = meta.address
+    full_address = ", ".join(
+        x
+        for x in [
+            addr.line1,
+            addr.line2,
+            f"{addr.city}, {addr.state} {addr.zip}",
+        ]
+        if x
+    )
+    modules_summary = [
+        f"(N) {m.quantity} — {m.manufacturer} {m.model} ({m.pmax_w:.0f}W)"
+        for m in project.modules
+    ]
+    inv_summary = [
+        f"(N) {i.quantity} — {i.manufacturer} {i.model} ({i.continuous_ac_w/1000:.1f} kWac cont.)"
+        for i in project.inverters
+    ]
+    bat_summary = [
+        f"(N) {b.quantity} — {b.manufacturer} {b.model} ({b.usable_kwh:.1f} kWh ea.)"
+        for b in project.batteries
+        if b.quantity
+    ]
+    service_lines = [
+        f"Service: {project.service.service_a}A {project.service.phase} {project.service.voltage}",
+        f"Main breaker: {project.service.main_breaker_a}A"
+        + (
+            f" · Bus: {project.service.busbar_a}A"
+            if project.service.busbar_a
+            else ""
+        ),
+        f"Disconnects: {project.service.num_disconnects} × {project.service.disconnect_rating_a}A",
+        f"Interconnection: {project.service.interconnection.value.replace('_', ' ')}",
+        f"Backup mode: {project.service.backup_mode.value.replace('_', ' ')}",
+    ]
+
+    default_construction = project.notes_construction or [
+        "A ladder shall be in place for inspection of roof-mounted equipment.",
+        "PV modules are non-combustible. System is utility interactive per UL 1741 listing of inverter(s).",
+        "Grounding electrode system per NEC 250 and 690.47. Existing electrodes may be used if adequate; otherwise install supplemental 8 ft ground rod with listed clamp.",
+        "Exposed non–current-carrying metal parts grounded per NEC 250.134 / 250.136(A).",
+        "Working clearances per NEC 110.26 around all new and existing electrical equipment.",
+        "All signage installed per NEC Articles 690, 705, 706 and AHJ requirements. Labels permanent, not handwritten.",
+        "Installer to verify all dimensions and roof structure on site. Drawings not necessarily to scale unless noted.",
+        "Exterior raceways painted to match adjacent surfaces where required by HOA/AHJ.",
+        "Roof penetrations flashed and sealed per racking manufacturer and roofing best practice.",
+    ]
+    default_electrical = project.notes_electrical or [
+        "All equipment listed by UL or other NRTL and labeled for the application.",
+        "Conductors copper unless noted, 600 V, 90°C insulation / 75°C terminations as applicable.",
+        "Rooftop wiring routed toward ridge/hip/valley per NEC 690.31 where applicable.",
+        "Junction boxes, raceways, and supports sized and listed for the environment (NEMA 3R outdoor).",
+        "Wire terminations labeled and torque per manufacturer.",
+        "Module grounding clips / WEEB or equivalent per racking listing.",
+        "Rapid shutdown per NEC 690.12 when required for the array type.",
+        "Energy storage installed per NEC 706 and manufacturer ESS instructions.",
+    ]
+
+    sheets = [
+        {"id": "PV-0", "name": "Cover Sheet"},
+        {"id": "PV-1", "name": "Site & Project Data"},
+        {"id": "PV-2", "name": "Array & Attachment"},
+        {"id": "PV-3", "name": "Single-Line Diagram"},
+        {"id": "PV-4", "name": "Electrical Calculations"},
+        {"id": "PV-5", "name": "Wire Schedule & BOM"},
+        {"id": "PV-6", "name": "Labels & Placards"},
+        {"id": "PV-7", "name": "QA / AHJ Checklist"},
+    ]
+
+    return {
+        "project": project,
+        "meta": meta,
+        "addr": addr,
+        "full_address": full_address,
+        "criteria": project.criteria,
+        "service": project.service,
+        "modules": project.modules,
+        "inverters": project.inverters,
+        "batteries": project.batteries,
+        "array": project.array,
+        "wires": project.wires,
+        "critical_loads": project.critical_loads,
+        "totals": totals,
+        "t": totals_to_dict(totals),
+        "modules_summary": modules_summary,
+        "inv_summary": inv_summary,
+        "bat_summary": bat_summary,
+        "service_lines": service_lines,
+        "notes_construction": default_construction,
+        "notes_electrical": default_electrical,
+        "sheets": sheets,
+        "custom_title": project.custom_title,
+        "generated": date.today().isoformat(),
+        "prepared_date": meta.prepared_date or date.today().isoformat(),
+    }
+
+
+def render_planset_html(project: ProjectInput) -> str:
+    env = _env()
+    tmpl = env.get_template("planset.html")
+    return tmpl.render(**build_context(project))

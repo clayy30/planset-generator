@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planset Generator — Doctor Planset</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <div class="mark">PP</div>
+        <div>
+          <h1>Planset Generator</h1>
+          <p class="tag">Permit-grade PV / hybrid ESS · calculations with work shown · QA gate</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button type="button" class="ghost" id="btn-health">API</button>
+        <button type="button" class="ghost" id="btn-load-list">Projects</button>
+        <button type="button" class="primary" id="btn-generate">Generate planset</button>
+      </div>
+    </header>
+
+    <div class="commitment">
+      <strong>Quality bar:</strong> Output shall exceed Solar Permit Solutions–style packages (Russell / Phillips examples):
+      no fake kWAC marketing on the cover, temperature-corrected Voc with formula, busbar 120% work, hybrid dual-disco topologies, wire schedule, and a PV-7 QA checklist those sets omit.
+    </div>
+
+    <div class="layout">
+      <nav class="steps" id="steps">
+        <button type="button" data-step="0" class="active">1 · Project</button>
+        <button type="button" data-step="1">2 · Service</button>
+        <button type="button" data-step="2">3 · Modules</button>
+        <button type="button" data-step="3">4 · Inverter / ESS</button>
+        <button type="button" data-step="4">5 · Strings</button>
+        <button type="button" data-step="5">6 · Review</button>
+      </nav>
+
+      <main class="panel">
+        <!-- STEP 0 -->
+        <section class="step" data-step="0">
+          <h2>Project &amp; site</h2>
+          <div class="grid2">
+            <label>Project name <input id="project_name" value="DPC Max Hybrid 15 — 400A Dual Disco" /></label>
+            <label>Customer <input id="customer_name" value="Sample Customer" /></label>
+            <label>Address line 1 <input id="line1" value="123 Example Rd" /></label>
+            <label>City <input id="city" value="Guyton" /></label>
+            <label>State <input id="state" value="GA" /></label>
+            <label>ZIP <input id="zip" value="31312" /></label>
+            <label>APN <input id="apn" value="" /></label>
+            <label>Utility <input id="utility" value="Georgia Power" /></label>
+            <label>AHJ <input id="ahj" value="Effingham County" /></label>
+            <label>Designer <input id="designer" value="Savannah Solar Power" /></label>
+            <label>Company <input id="company" value="Savannah Solar Power" /></label>
+            <label>Revision <input id="revision" value="0" /></label>
+          </div>
+          <div class="row">
+            <button type="button" class="ghost" id="btn-preset-duracell">Load Duracell 400A preset</button>
+            <button type="button" class="ghost" id="btn-preset-eg4">Load EG4 GridBOSS preset</button>
+          </div>
+        </section>
+
+        <!-- STEP 1 -->
+        <section class="step hidden" data-step="1">
+          <h2>Service &amp; interconnection</h2>
+          <div class="grid2">
+            <label>Service amps
+              <select id="service_a">
+                <option>100</option>
+                <option>200</option>
+                <option selected>400</option>
+              </select>
+            </label>
+            <label>Main breaker A <input type="number" id="main_breaker_a" value="400" /></label>
+            <label>Busbar A (if known) <input type="number" id="busbar_a" value="400" /></label>
+            <label># Disconnects <input type="number" id="num_disconnects" value="2" /></label>
+            <label>Disco rating A <input type="number" id="disconnect_rating_a" value="200" /></label>
+            <label>Interconnection
+              <select id="interconnection">
+                <option value="backfeed_breaker">Backfeed breaker</option>
+                <option value="load_side_hybrid">Load-side hybrid</option>
+                <option value="dual_disco_hybrid" selected>Dual disco hybrid</option>
+                <option value="gridboss_mid">GridBOSS / MID</option>
+                <option value="supply_side_tap">Supply-side tap</option>
+                <option value="feeder_tap">Feeder tap</option>
+              </select>
+            </label>
+            <label>Backup mode
+              <select id="backup_mode">
+                <option value="none">None (grid-tie only)</option>
+                <option value="critical_loads">Critical loads</option>
+                <option value="whole_panel">Whole panel</option>
+                <option value="half_home" selected>Half-home (one of two discos)</option>
+                <option value="full_dual_disco">Full dual-disco backup</option>
+              </select>
+            </label>
+            <label>Backfeed breaker A (optional) <input type="number" id="backfeed_breaker_a" placeholder="auto" /></label>
+            <label>AC disco A (optional) <input type="number" id="ac_disco_a" value="200" /></label>
+            <label class="check"><input type="checkbox" id="production_meter" /> Production meter required</label>
+          </div>
+          <h3>Design criteria</h3>
+          <div class="grid2">
+            <label>Roof frame <input id="roof_frame" value='2"x6" rafters @ 24" O.C.' /></label>
+            <label>Wind mph <input type="number" id="wind_speed_mph" value="131" /></label>
+            <label>Wind exposure <input id="wind_exposure" value="B" /></label>
+            <label>Record low °C <input type="number" id="record_low_c" value="-5" step="0.1" /></label>
+          </div>
+        </section>
+
+        <!-- STEP 2 -->
+        <section class="step hidden" data-step="2">
+          <h2>PV modules</h2>
+          <div class="grid2">
+            <label>Manufacturer <input id="mod_mfr" value="Generic Premium" /></label>
+            <label>Model <input id="mod_model" value="450W-144HC" /></label>
+            <label>Quantity <input type="number" id="mod_qty" value="24" /></label>
+            <label>Pmax W <input type="number" id="mod_pmax" value="450" /></label>
+            <label>Vmp <input type="number" id="mod_vmp" value="41.5" step="0.01" /></label>
+            <label>Imp <input type="number" id="mod_imp" value="10.85" step="0.01" /></label>
+            <label>Voc <input type="number" id="mod_voc" value="49.5" step="0.01" /></label>
+            <label>Isc <input type="number" id="mod_isc" value="11.5" step="0.01" /></label>
+            <label>Voc coeff %/°C <input type="number" id="mod_coeff" value="-0.27" step="0.01" /></label>
+          </div>
+          <p class="hint">Multi-SKU arrays: load a preset or extend via API JSON. UI v1 supports primary module type.</p>
+        </section>
+
+        <!-- STEP 3 -->
+        <section class="step hidden" data-step="3">
+          <h2>Inverter &amp; battery</h2>
+          <div class="grid2">
+            <label>Inv manufacturer <input id="inv_mfr" value="Duracell Power Center" /></label>
+            <label>Inv model <input id="inv_model" value="Max Hybrid 15" /></label>
+            <label>Quantity <input type="number" id="inv_qty" value="1" /></label>
+            <label>Continuous W <input type="number" id="inv_w" value="15000" /></label>
+            <label>Continuous A @240V <input type="number" id="inv_a" value="62.5" step="0.1" /></label>
+            <label>Max PV W <input type="number" id="inv_max_pv" value="19500" /></label>
+            <label>Max Voc <input type="number" id="inv_max_voc" value="500" /></label>
+            <label>MPPT count <input type="number" id="inv_mppt" value="3" /></label>
+            <label>Max Imp / MPPT <input type="number" id="inv_imp_mppt" value="26" /></label>
+            <label>Passthrough A <input type="number" id="inv_pass" value="200" /></label>
+            <label>Listing <input id="inv_listing" value="UL 1741 / IEEE 1547a" /></label>
+            <label>Bat manufacturer <input id="bat_mfr" value="Duracell Power Center" /></label>
+            <label>Bat model <input id="bat_model" value="Stack 15-30" /></label>
+            <label>Bat qty <input type="number" id="bat_qty" value="1" /></label>
+            <label>Usable kWh each <input type="number" id="bat_kwh" value="30" step="0.1" /></label>
+          </div>
+        </section>
+
+        <!-- STEP 4 -->
+        <section class="step hidden" data-step="4">
+          <h2>Stringing</h2>
+          <p class="hint">Leave series/parallel empty to auto-design from Voc limit. Or set three equal strings for 3× MPPT.</p>
+          <div class="grid2">
+            <label>Modules in series / string <input type="number" id="str_series" value="8" /></label>
+            <label>Parallel strings (per entry) <input type="number" id="str_par" value="1" /></label>
+            <label>Number of string entries <input type="number" id="str_count" value="3" /></label>
+          </div>
+          <button type="button" class="ghost" id="btn-preview-calcs">Preview calculations</button>
+          <pre id="calc-preview" class="calc-box">Run preview to see Voc_cold, busbar rule, warnings…</pre>
+        </section>
+
+        <!-- STEP 5 -->
+        <section class="step hidden" data-step="5">
+          <h2>Review &amp; generate</h2>
+          <div id="review-summary" class="review"></div>
+          <div class="row">
+            <button type="button" class="primary" id="btn-generate-2">Generate 8-sheet planset</button>
+            <button type="button" class="ghost" id="btn-save">Save project</button>
+          </div>
+          <div id="gen-result" class="result hidden"></div>
+        </section>
+
+        <footer class="step-nav">
+          <button type="button" class="ghost" id="btn-prev">Back</button>
+          <button type="button" class="primary" id="btn-next">Next</button>
+        </footer>
+      </main>
+
+      <aside class="rail">
+        <h3>Live snapshot</h3>
+        <div id="snapshot" class="snapshot">Fill the form — calcs update on review / preview.</div>
+        <h3>Projects</h3>
+        <ul id="project-list" class="plist"></ul>
+        <h3>Why this beats the examples</h3>
+        <ul class="why">
+          <li>Cover kWAC = continuous inverter output, not nonsense</li>
+          <li>Voc temperature-corrected with formula on PV-4</li>
+          <li>Busbar 120% math when backfeed applies</li>
+          <li>Dual 200A disco hybrid SLD (half or full)</li>
+          <li>Wire schedule + BOM + labels + <strong>QA sheet</strong></li>
+          <li>Validation warnings before you submit garbage</li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

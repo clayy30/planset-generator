@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ meta.project_name }} — Planset {{ meta.revision }}</title>
+  <style>
+    /* ANSI B 11×17 landscape sheet */
+    @page { size: 17in 11in; margin: 0.35in; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: "Inter", "Segoe UI", Arial, Helvetica, sans-serif;
+      font-size: 9.5pt;
+      color: #111;
+      background: #c5c5c5;
+    }
+    .sheet {
+      width: 17in;
+      height: 11in;
+      background: #fff;
+      margin: 0.25in auto;
+      padding: 0.28in 0.32in 0.22in;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+    .sheet:last-child { page-break-after: auto; }
+    @media print {
+      html, body { background: #fff; }
+      .sheet { margin: 0; box-shadow: none; width: auto; height: auto; min-height: 10.2in; }
+    }
+
+    /* Header banner */
+    .banner {
+      border: 2px solid #111;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .banner h1 {
+      margin: 0;
+      font-size: 15pt;
+      letter-spacing: 0.03em;
+      line-height: 1.15;
+    }
+    .banner .sub {
+      font-size: 9pt;
+      color: #333;
+      margin-top: 2px;
+    }
+    .banner .kw {
+      text-align: right;
+      font-size: 10pt;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .banner .kw span { display: block; font-weight: 500; font-size: 8.5pt; color: #444; }
+
+    /* Body grid under banner */
+    .body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 3.1in;
+      gap: 8px;
+      min-height: 0;
+    }
+    .main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .side {
+      border: 1.5px solid #111;
+      display: flex;
+      flex-direction: column;
+      font-size: 8pt;
+    }
+    .side .tb-head {
+      background: #111;
+      color: #fff;
+      padding: 4px 6px;
+      font-weight: 700;
+      font-size: 8pt;
+      letter-spacing: 0.04em;
+    }
+    .side .tb-row {
+      border-top: 1px solid #ccc;
+      padding: 4px 6px;
+    }
+    .side .tb-row .lbl {
+      font-size: 7pt;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #666;
+    }
+    .side .tb-row .val { font-weight: 600; font-size: 8.5pt; }
+    .side .rev-table { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+    .side .rev-table th, .side .rev-table td {
+      border: 1px solid #bbb; padding: 2px 3px; text-align: left;
+    }
+    .side .rev-table th { background: #f0f0f0; }
+
+    /* Title block footer strip */
+    .footer {
+      margin-top: 6px;
+      border: 1.5px solid #111;
+      display: grid;
+      grid-template-columns: 2.2fr 1.4fr 0.9fr 0.7fr 0.7fr;
+      font-size: 7.5pt;
+    }
+    .footer > div {
+      border-right: 1px solid #111;
+      padding: 3px 5px;
+      min-height: 0.55in;
+    }
+    .footer > div:last-child { border-right: none; }
+    .footer .lbl {
+      font-size: 6.5pt;
+      text-transform: uppercase;
+      color: #666;
+      letter-spacing: 0.03em;
+    }
+    .footer .val { font-weight: 700; font-size: 8.5pt; }
+
+    /* Panels */
+    .panel {
+      border: 1.5px solid #111;
+      padding: 5px 7px;
+    }
+    .panel h2 {
+      margin: 0 0 4px;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 2px;
+    }
+    .panel ul { margin: 2px 0 0; padding-left: 14px; }
+    .panel li { margin-bottom: 1px; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+    }
+    table.data th, table.data td {
+      border: 1px solid #999;
+      padding: 3px 5px;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.data th { background: #efefef; font-size: 7.5pt; text-transform: uppercase; }
+    table.data tr.pass td { background: #eef8f0; }
+    table.data tr.fail td { background: #fdecec; }
+    .mono { font-family: "IBM Plex Mono", "Consolas", monospace; font-size: 7.5pt; }
+    .warn {
+      background: #fff6e5;
+      border: 1px solid #c90;
+      padding: 4px 6px;
+      font-size: 8pt;
+    }
+    .ok {
+      background: #eef8f0;
+      border: 1px solid #2a7;
+      padding: 4px 6px;
+      font-size: 8pt;
+    }
+    .badge {
+      display: inline-block;
+      border: 1px solid #111;
+      padding: 1px 5px;
+      font-size: 7pt;
+      font-weight: 700;
+      margin-right: 3px;
+    }
+    .badge.green { background: #d4f0e2; }
+    .badge.red { background: #fdd; }
+    .badge.blue { background: #dce9fb; }
+
+    /* SLD */
+    .sld-wrap {
+      border: 1.5px solid #111;
+      background: #fafbfc;
+      padding: 6px;
+      flex: 1;
+    }
+    svg.sld { width: 100%; height: auto; display: block; }
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 8px 14px;
+      font-size: 7.5pt; margin-top: 3px;
+    }
+    .legend i {
+      display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 3px;
+    }
+
+    .qa-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .qa-item {
+      border: 1px solid #bbb;
+      padding: 4px 6px;
+      font-size: 8pt;
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
+    }
+    .qa-box {
+      width: 11px; height: 11px; border: 1.5px solid #111; flex-shrink: 0; margin-top: 1px;
+    }
+    .sheet-full .body { grid-template-columns: 1fr; }
+    .tiny { font-size: 7.5pt; color: #444; }
+    .big-num { font-size: 16pt; font-weight: 800; line-height: 1; }
+    .stat {
+      border: 1.5px solid #111;
+      padding: 6px 8px;
+      text-align: center;
+    }
+    .stat .l { font-size: 7pt; text-transform: uppercase; color: #555; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+{# ===================== PV-0 COVER ===================== #}
+<section class="sheet" id="PV-0">
+  <div class="banner">
+    <div>
+      <h1>{{ custom_title }}</h1>
+      <div class="sub">
+        {{ totals.module_count }} MODULES · {{ '%.3f'|format(totals.dc_kw) }} kWDC ·
+        {{ '%.2f'|format(totals.ac_kw_continuous) }} kWAC continuous inverter
+        {% if totals.battery_kwh %} · {{ '%.1f'|format(totals.battery_kwh) }} kWh ESS{% endif %}
+      </div>
+      <div class="sub"><strong>{{ full_address }}</strong></div>
+    </div>
+    <div class="kw">
+      {{ '%.3f'|format(totals.dc_kw) }} kWDC
+      <span>{{ '%.2f'|format(totals.ac_kw_continuous) }} kWAC cont.{% if totals.dc_ac_ratio %} · DC/AC {{ '%.2f'|format(totals.dc_ac_ratio) }}{% endif %}</span>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="main">
+      <div class="two">
+        <div class="panel">
+          <h2>System summary</h2>
+          <ul>
+            {% for line in modules_summary %}<li>{{ line }}</li>{% endfor %}
+            {% for line in inv_summary %}<li>{{ line }}</li>{% endfor %}
+            {% for line in bat_summary %}<li>{{ line }}</li>{% endfor %}
+            {% for line in service_lines %}<li>{{ line }}</li>{% endfor %}
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>Design criteria</h2>
+          <ul>
+            <li>Roof: {{ criteria.roof_type.value.replace('_',' ') }} · {{ criteria.roof_layers }} layer(s)</li>
+            <li>Frame: {{ criteria.roof_frame }}</li>
+            <li>Stories: {{ criteria.stories }} · Risk cat: {{ criteria.risk_category }}</li>
+            <li>Snow: {{ criteria.snow_load_psf }} psf · Wind: {{ criteria.wind_speed_mph }} mph · Exp {{ criteria.wind_exposure }}</li>
+            <li>Attic run: {{ 'REQUIRED' if criteria.attic_run_required else 'OPTIONAL / FIELD' }}</li>
+            {% if addr.latitude is not none %}
+            <li>Coord: {{ addr.latitude }}, {{ addr.longitude }}</li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="panel">
+          <h2>Governing codes</h2>
+          <ul>
+            {% for c in meta.governing_codes %}<li>{{ c }}</li>{% endfor %}
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>Sheet index</h2>
+          <table class="data">
+            <tr><th>Sht</th><th>Name</th></tr>
+            {% for s in sheets %}
+            <tr><td class="mono">{{ s.id }}</td><td>{{ s.name }}</td></tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Construction notes (summary)</h2>
+        <ul>
+          {% for n in notes_construction[:6] %}<li>{{ n }}</li>{% endfor %}
+        </ul>
+      </div>
+
+      {% if totals.warnings %}
+      <div class="warn">
+        <strong>Design validation flags:</strong>
+        <ul>{% for w in totals.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+      </div>
+      {% else %}
+      <div class="ok"><strong>Automated design checks:</strong> no critical calculation failures. See PV-4 / PV-7 for full work and AHJ checklist.</div>
+      {% endif %}
+
+      <div class="panel tiny">
+        <strong>Quality standard:</strong> This set is generated with temperature-corrected Voc, explicit 120% busbar math (when backfeed), continuous-current factors, hybrid passthrough awareness, and a QA sheet.
+        Cover kWAC is <em>inverter continuous output</em> — not a marketing number. Wire sizes on PV-5 are design-basis; field PE/EC shall confirm ampacity, temp rating, and conduit fill.
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="tb-head">{{ meta.company }}</div>
+      <div class="tb-row"><div class="lbl">Designer</div><div class="val">{{ meta.designer }}</div></div>
+      {% if meta.company_address %}<div class="tb-row"><div class="lbl">Office</div><div class="val">{{ meta.company_address }}</div></div>{% endif %}
+      <div class="tb-row">
+        <div class="lbl">Revisions</div>
+        <table class="rev-table">
+          <tr><th>Desc</th><th>Date</th><th>Rev</th></tr>
+          <tr><td>{{ meta.revision_note }}</td><td>{{ prepared_date }}</td><td>{{ meta.revision }}</td></tr>
+        </table>
+      </div>
+      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+      <div class="tb-row"><div class="lbl">Customer</div><div class="val">{{ meta.customer_name }}</div></div>
+      <div class="tb-row"><div class="lbl">Address</div><div class="val">{{ full_address }}</div></div>
+      <div class="tb-row"><div class="lbl">APN</div><div class="val">{{ addr.apn or '—' }}</div></div>
+      <div class="tb-row"><div class="lbl">Utility</div><div class="val">{{ meta.utility or '—' }}</div></div>
+      <div class="tb-row"><div class="lbl">AHJ</div><div class="val">{{ meta.ahj or '—' }}</div></div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">COVER SHEET</div></div>
+      <div class="tb-row"><div class="lbl">Size</div><div class="val">ANSI B · 11" × 17"</div></div>
+      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-0</div></div>
+      <div class="tb-row"><div class="lbl">Generated</div><div class="val">{{ generated }}</div></div>
+    </aside>
+  </div>
+
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }} — {{ meta.customer_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Cover Sheet / System Summary</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-0</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+{# ===================== PV-1 SITE / DATA ===================== #}
+<section class="sheet" id="PV-1">
+  <div class="banner">
+    <div>
+      <h1>SITE &amp; PROJECT DATA</h1>
+      <div class="sub">{{ full_address }} · Utility {{ meta.utility or 'TBD' }} · AHJ {{ meta.ahj or 'TBD' }}</div>
+    </div>
+    <div class="kw">PV-1<span>Site / service / ESS intent</span></div>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="three">
+        <div class="stat"><div class="big-num">{{ service.service_a }}A</div><div class="l">Service</div></div>
+        <div class="stat"><div class="big-num">{{ service.num_disconnects }}×{{ service.disconnect_rating_a }}</div><div class="l">Disconnects</div></div>
+        <div class="stat"><div class="big-num">{{ service.backup_mode.value.replace('_',' ') }}</div><div class="l">Backup mode</div></div>
+      </div>
+      <div class="two">
+        <div class="panel">
+          <h2>Service equipment</h2>
+          <table class="data">
+            <tr><th>Parameter</th><th>Value</th></tr>
+            <tr><td>Service amperage</td><td>{{ service.service_a }} A</td></tr>
+            <tr><td>Configuration</td><td>{{ service.phase }} · {{ service.voltage }}</td></tr>
+            <tr><td>Main breaker</td><td>{{ service.main_breaker_a }} A</td></tr>
+            <tr><td>Busbar (if known)</td><td>{{ service.busbar_a or 'Match main / field verify' }} {% if service.busbar_a %}A{% endif %}</td></tr>
+            <tr><td>Disconnects</td><td>{{ service.num_disconnects }} × {{ service.disconnect_rating_a }} A</td></tr>
+            <tr><td>Interconnection</td><td>{{ service.interconnection.value.replace('_',' ') }}</td></tr>
+            <tr><td>Backfeed breaker</td><td>{{ service.backfeed_breaker_a or totals.max_backfeed_a or 'N/A' }} {% if service.backfeed_breaker_a or totals.max_backfeed_a %}A{% endif %}</td></tr>
+            <tr><td>AC disco (field)</td><td>{{ service.ac_disco_a or 'Per POCO / integrated' }} {% if service.ac_disco_a %}A{% endif %}</td></tr>
+            <tr><td>Production meter</td><td>{{ 'Yes' if service.production_meter else 'No / as required' }}</td></tr>
+            <tr><td>Export limit</td><td>{{ (service.export_limit_a ~ ' A') if service.export_limit_a is not none else 'Unlimited / POCO settings' }}</td></tr>
+          </table>
+        </div>
+        <div class="panel">
+          <h2>Backup / ESS intent</h2>
+          <p class="tiny">Mode: <strong>{{ service.backup_mode.value.replace('_',' ')|upper }}</strong></p>
+          {% if service.backup_mode.value == 'half_home' %}
+          <p>One hybrid inverter on Disco #1 path. Disco #2 remains utility-only during outage.</p>
+          {% elif service.backup_mode.value == 'full_dual_disco' %}
+          <p>One hybrid per 200 A disconnect for dual-panel whole-home topology. Islanded power = sum of inverter continuous ratings — not service amperage.</p>
+          {% elif service.backup_mode.value == 'critical_loads' %}
+          <p>Hybrid feeds a critical-load subpanel. Selected circuits only.</p>
+          {% elif service.backup_mode.value == 'whole_panel' %}
+          <p>Hybrid load output feeds entire load center on the hybrid path (within continuous island rating).</p>
+          {% else %}
+          <p>Grid-interactive only — no backup loads panel required for this design intent.</p>
+          {% endif %}
+          {% if critical_loads %}
+          <table class="data" style="margin-top:4px">
+            <tr><th>Critical load</th><th>VA</th><th>Cont.</th></tr>
+            {% for cl in critical_loads %}
+            <tr><td>{{ cl.name }}</td><td>{{ cl.va|int }}</td><td>{{ 'Y' if cl.continuous else 'N' }}</td></tr>
+            {% endfor %}
+            <tr><th>Total VA</th><th colspan="2">{{ critical_loads|sum(attribute='va')|int }}</th></tr>
+          </table>
+          {% endif %}
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Equipment schedule</h2>
+        <table class="data">
+          <tr><th>Type</th><th>Mfr / Model</th><th>Qty</th><th>Key ratings</th><th>Listing / env</th></tr>
+          {% for m in modules %}
+          <tr>
+            <td>PV module</td><td>{{ m.manufacturer }} {{ m.model }}</td><td>{{ m.quantity }}</td>
+            <td>{{ m.pmax_w }}W · Voc {{ m.voc }}V · Isc {{ m.isc }}A</td><td>UL 61730 / 61215 TYP</td>
+          </tr>
+          {% endfor %}
+          {% for i in inverters %}
+          <tr>
+            <td>Inverter</td><td>{{ i.manufacturer }} {{ i.model }}</td><td>{{ i.quantity }}</td>
+            <td>{{ i.continuous_ac_w/1000 }} kW · {{ i.continuous_ac_a }}A
+              {% if i.passthrough_a %} · {{ i.passthrough_a }}A pass{% endif %}
+              {% if i.max_voc %} · Voc≤{{ i.max_voc }}V{% endif %}
+            </td>
+            <td>{{ i.listing }} · {{ i.ne_ma }}</td>
+          </tr>
+          {% endfor %}
+          {% for b in batteries if b.quantity %}
+          <tr>
+            <td>Battery</td><td>{{ b.manufacturer }} {{ b.model }}</td><td>{{ b.quantity }}</td>
+            <td>{{ b.usable_kwh }} kWh · {{ b.nominal_v }}V nom.</td><td>UL 1973 / 9540A as listed</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      <div class="panel">
+        <h2>Electrical notes</h2>
+        <ul>{% for n in notes_electrical %}<li>{{ n }}</li>{% endfor %}</ul>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="tb-head">TITLE BLOCK</div>
+      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+      <div class="tb-row"><div class="lbl">Customer</div><div class="val">{{ meta.customer_name }}</div></div>
+      <div class="tb-row"><div class="lbl">Address</div><div class="val">{{ full_address }}</div></div>
+      <div class="tb-row"><div class="lbl">Utility / AHJ</div><div class="val">{{ meta.utility or '—' }} / {{ meta.ahj or '—' }}</div></div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">SITE &amp; PROJECT DATA</div></div>
+      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-1</div></div>
+      <div class="tb-row"><div class="lbl">Company</div><div class="val">{{ meta.company }}</div></div>
+      <div class="tb-row"><div class="lbl">Designer</div><div class="val">{{ meta.designer }}</div></div>
+    </aside>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Site &amp; Project Data</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-1</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+{# ===================== PV-2 ARRAY ===================== #}
+<section class="sheet" id="PV-2">
+  <div class="banner">
+    <div>
+      <h1>ARRAY LAYOUT &amp; ATTACHMENT BASIS</h1>
+      <div class="sub">Racking: {{ array.racking }} · Attachment: {{ array.attachment }}</div>
+    </div>
+    <div class="kw">PV-2<span>Array / fire setbacks</span></div>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="two">
+        <div class="panel">
+          <h2>Array geometry</h2>
+          <table class="data">
+            <tr><th>Plane</th><th>Modules</th><th>Azimuth</th><th>Tilt</th></tr>
+            {% for n in range(array.roof_planes) %}
+            <tr>
+              <td>Roof #{{ n+1 }}</td>
+              <td>{{ array.modules_per_plane[n] if n < array.modules_per_plane|length else '—' }}</td>
+              <td>{{ array.azimuth_deg[n] if n < array.azimuth_deg|length else '—' }}°</td>
+              <td>{{ array.tilt_deg[n] if n < array.tilt_deg|length else '—' }}°</td>
+            </tr>
+            {% endfor %}
+          </table>
+          <p class="tiny" style="margin-top:4px">Module footprint (typ first SKU):
+            {% if modules %}{{ modules[0].length_in }}" × {{ modules[0].width_in }}" × {{ modules[0].depth_in }}"{% endif %}
+          </p>
+        </div>
+        <div class="panel">
+          <h2>Fire setbacks (design basis)</h2>
+          <ul>
+            <li>Ridge: {{ criteria.fire_setback_ridge_in }}" clear pathway TYP (IFC / AHJ)</li>
+            <li>Eave / hip / valley: {{ criteria.fire_setback_hip_valley_in }}" TYP</li>
+            <li>Pathways: maintain 36" fire access routes as required by AHJ</li>
+            <li>Field: verify actual roof plan; adjust module count if setbacks conflict</li>
+          </ul>
+          <h2 style="margin-top:8px">Attachment basis</h2>
+          <ul>
+            <li>{{ array.attachment }}</li>
+            <li>Span / spacing per racking PE letter or manufacturer span tables for {{ criteria.wind_speed_mph }} mph Exp {{ criteria.wind_exposure }}</li>
+            <li>Flash all penetrations; do not overdrive lags</li>
+            <li>Bond rails / modules per listing (WEEB / integrated grounding)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Schematic array block (not a surveyed roof plan)</h2>
+        <div class="sld-wrap">
+          <svg class="sld" viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="20" width="860" height="160" fill="none" stroke="#111" stroke-width="2"/>
+            <text x="30" y="40" font-size="12" font-weight="700">ROOF PLANE (SCHEMATIC)</text>
+            <text x="30" y="56" font-size="10" fill="#444">Install modules within fire setbacks · actual layout by field measure</text>
+            {% set cols = 8 %}
+            {% set total_m = totals.module_count %}
+            {% for i in range([total_m, 24]|min) %}
+              {% set c = i % cols %}
+              {% set r = (i // cols) %}
+              <rect x="{{ 40 + c*100 }}" y="{{ 70 + r*40 }}" width="90" height="32" fill="#1a5fb4" stroke="#0b3d91" stroke-width="1"/>
+              <text x="{{ 85 + c*100 }}" y="{{ 90 + r*40 }}" text-anchor="middle" fill="#fff" font-size="10">M{{ i+1 }}</text>
+            {% endfor %}
+            <text x="30" y="195" font-size="10" fill="#444">Showing up to 24 module placeholders ({{ totals.module_count }} total). Ridge pathway reserved top of sheet in field.</text>
+          </svg>
+        </div>
+      </div>
+      <div class="panel tiny">
+        <strong>Note vs permit-mill sets:</strong> This sheet does not fake a photoreal roof CAD takeoff without a site survey.
+        It locks design criteria, setbacks, racking basis, and module count so the EC/roofer can field-verify — with PE stamp pathway when structural letter is required by AHJ.
+      </div>
+    </div>
+    <aside class="side">
+      <div class="tb-head">TITLE BLOCK</div>
+      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">ARRAY &amp; ATTACHMENT</div></div>
+      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-2</div></div>
+      <div class="tb-row"><div class="lbl">Wind</div><div class="val">{{ criteria.wind_speed_mph }} mph · {{ criteria.wind_exposure }}</div></div>
+      <div class="tb-row"><div class="lbl">Racking</div><div class="val">{{ array.racking }}</div></div>
+    </aside>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Array Layout &amp; Attachment Basis</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-2</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+{# ===================== PV-3 SLD ===================== #}
+<section class="sheet" id="PV-3">
+  <div class="banner">
+    <div>
+      <h1>SINGLE-LINE DIAGRAM</h1>
+      <div class="sub">
+        Interconnection: {{ service.interconnection.value.replace('_',' ') }} ·
+        Backup: {{ service.backup_mode.value.replace('_',' ') }} ·
+        {{ service.service_a }}A service
+      </div>
+    </div>
+    <div class="kw">PV-3<span>Electrical one-line</span></div>
+  </div>
+  <div class="body sheet-full">
+    <div class="main">
+      <div class="sld-wrap">
+        {% set dual = service.backup_mode.value in ['half_home','full_dual_disco'] or service.num_disconnects >= 2 %}
+        {% set full_dual = service.backup_mode.value == 'full_dual_disco' %}
+        {% set critical = service.backup_mode.value == 'critical_loads' %}
+        <svg class="sld" viewBox="0 0 1100 520" xmlns="http://www.w3.org/2000/svg">
+          <!-- Utility -->
+          <circle cx="550" cy="36" r="14" fill="none" stroke="#0b3d91" stroke-width="2"/>
+          <text x="550" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="#0b3d91">~</text>
+          <text x="575" y="40" font-size="12" font-weight="700">UTILITY {{ service.voltage }}</text>
+          <line x1="550" y1="50" x2="550" y2="72" stroke="#0b3d91" stroke-width="2.5"/>
+          <rect x="470" y="72" width="160" height="36" fill="#fff" stroke="#0b3d91" stroke-width="2"/>
+          <text x="550" y="94" text-anchor="middle" font-size="11" font-weight="700">UTILITY METER</text>
+          {% if service.production_meter %}
+          <text x="640" y="88" font-size="9" fill="#444">+ PROD. METER AS REQD</text>
+          {% endif %}
+          <line x1="550" y1="108" x2="550" y2="128" stroke="#0b3d91" stroke-width="2.5"/>
+          <rect x="455" y="128" width="190" height="40" fill="#fff" stroke="#111" stroke-width="2"/>
+          <text x="550" y="146" text-anchor="middle" font-size="11" font-weight="700">{{ service.service_a }}A SERVICE EQUIPMENT</text>
+          <text x="550" y="160" text-anchor="middle" font-size="9" fill="#444">Main {{ service.main_breaker_a }}A{% if service.busbar_a %} · Bus {{ service.busbar_a }}A{% endif %}</text>
+
+          {% if dual %}
+          <line x1="550" y1="168" x2="550" y2="190" stroke="#0b3d91" stroke-width="2.5"/>
+          <line x1="220" y1="190" x2="880" y2="190" stroke="#0b3d91" stroke-width="2.5"/>
+          <line x1="220" y1="190" x2="220" y2="215" stroke="#0b3d91" stroke-width="2.5"/>
+          <line x1="880" y1="190" x2="880" y2="215" stroke="#0b3d91" stroke-width="2.5"/>
+
+          <rect x="130" y="215" width="180" height="42" fill="#fff" stroke="#0b5c2e" stroke-width="2.2"/>
+          <text x="220" y="240" text-anchor="middle" font-size="11" font-weight="700" fill="#0b5c2e">{{ service.disconnect_rating_a }}A DISCO #1</text>
+
+          <rect x="790" y="215" width="180" height="42" fill="#fff" stroke="{{ '#0b5c2e' if full_dual else '#0b3d91' }}" stroke-width="2.2"/>
+          <text x="880" y="240" text-anchor="middle" font-size="11" font-weight="700" fill="{{ '#0b5c2e' if full_dual else '#0b3d91' }}">{{ service.disconnect_rating_a }}A DISCO #2</text>
+
+          <line x1="220" y1="257" x2="220" y2="285" stroke="#0b5c2e" stroke-width="2.5"/>
+          <!-- INV A -->
+          <rect x="100" y="285" width="240" height="88" fill="#fff" stroke="#0b5c2e" stroke-width="2.5"/>
+          <text x="220" y="308" text-anchor="middle" font-size="12" font-weight="700" fill="#0b5c2e">
+            {% if inverters %}{{ inverters[0].manufacturer }} {{ inverters[0].model }}{% else %}HYBRID INVERTER{% endif %}
+          </text>
+          <text x="220" y="326" text-anchor="middle" font-size="9">UNIT A · GRID / LOAD / BAT / PV</text>
+          <text x="220" y="342" text-anchor="middle" font-size="9" fill="#444">
+            {% if inverters %}{{ inverters[0].continuous_ac_a }}A cont.{% if inverters[0].passthrough_a %} · {{ inverters[0].passthrough_a }}A pass{% endif %}{% endif %}
+          </text>
+          <text x="220" y="360" text-anchor="middle" font-size="8" fill="#666">{{ inverters[0].listing if inverters else 'UL 1741' }}</text>
+
+          {% if full_dual %}
+          <line x1="880" y1="257" x2="880" y2="285" stroke="#0b5c2e" stroke-width="2.5"/>
+          <rect x="760" y="285" width="240" height="88" fill="#fff" stroke="#0b5c2e" stroke-width="2.5"/>
+          <text x="880" y="308" text-anchor="middle" font-size="12" font-weight="700" fill="#0b5c2e">
+            {% if inverters|length > 1 %}{{ inverters[1].manufacturer }} {{ inverters[1].model }}{% elif inverters %}{{ inverters[0].model }} B{% else %}HYBRID B{% endif %}
+          </text>
+          <text x="880" y="326" text-anchor="middle" font-size="9">UNIT B · GRID / LOAD / BAT / PV</text>
+          <text x="880" y="342" text-anchor="middle" font-size="9" fill="#444">PARALLEL / COMMS PER MFR</text>
+          <line x1="340" y1="329" x2="760" y2="329" stroke="#666" stroke-width="1.5" stroke-dasharray="5 3"/>
+          {% else %}
+          <line x1="880" y1="257" x2="880" y2="320" stroke="#0b3d91" stroke-width="2.5"/>
+          <rect x="790" y="320" width="180" height="50" fill="#fff" stroke="#0b3d91" stroke-width="2"/>
+          <text x="880" y="342" text-anchor="middle" font-size="11" font-weight="700" fill="#0b3d91">PANEL #2 NON-BU</text>
+          <text x="880" y="358" text-anchor="middle" font-size="9" fill="#666">utility only</text>
+          {% endif %}
+
+          <!-- BAT / PV left -->
+          <line x1="100" y1="330" x2="50" y2="330" stroke="#8a3b00" stroke-width="2"/>
+          <line x1="50" y1="330" x2="50" y2="400" stroke="#8a3b00" stroke-width="2"/>
+          <rect x="10" y="400" width="90" height="48" fill="#fff" stroke="#8a3b00" stroke-width="1.8"/>
+          <text x="55" y="420" text-anchor="middle" font-size="10" font-weight="700" fill="#8a3b00">BATTERY</text>
+          <text x="55" y="436" text-anchor="middle" font-size="8">{{ '%.0f'|format(totals.battery_kwh) }} kWh</text>
+
+          <line x1="340" y1="330" x2="400" y2="330" stroke="#6b5200" stroke-width="2"/>
+          <rect x="400" y="308" width="100" height="44" fill="#fff" stroke="#6b5200" stroke-width="1.8"/>
+          <text x="450" y="326" text-anchor="middle" font-size="10" font-weight="700" fill="#6b5200">PV ARRAY</text>
+          <text x="450" y="342" text-anchor="middle" font-size="8">{{ '%.2f'|format(totals.dc_kw) }} kWDC</text>
+
+          <line x1="220" y1="373" x2="220" y2="420" stroke="#0b5c2e" stroke-width="2.5"/>
+          <rect x="130" y="420" width="180" height="48" fill="#0b5c2e"/>
+          <text x="220" y="442" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">
+            {% if critical %}CRITICAL SUBPANEL{% else %}BACKED-UP PANEL #1{% endif %}
+          </text>
+          <text x="220" y="458" text-anchor="middle" font-size="8" fill="#d4f0e2">LOAD OUT</text>
+
+          {% if full_dual %}
+          <line x1="880" y1="373" x2="880" y2="420" stroke="#0b5c2e" stroke-width="2.5"/>
+          <rect x="790" y="420" width="180" height="48" fill="#0b5c2e"/>
+          <text x="880" y="442" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">BACKED-UP PANEL #2</text>
+          <text x="880" y="458" text-anchor="middle" font-size="8" fill="#d4f0e2">LOAD OUT</text>
+          {% endif %}
+
+          <rect x="520" y="400" width="220" height="70" fill="#fff5f5" stroke="#8b0000" stroke-width="1.5"/>
+          <text x="630" y="422" text-anchor="middle" font-size="10" font-weight="700" fill="#8b0000">RSD / ESS INITIATOR</text>
+          <text x="630" y="440" text-anchor="middle" font-size="9" fill="#444">NEC 690.12 · outdoor access</text>
+          <text x="630" y="456" text-anchor="middle" font-size="8" fill="#666">CTs for export / prod as required</text>
+
+          {% else %}
+          <!-- Single disco / standard -->
+          <line x1="550" y1="168" x2="550" y2="200" stroke="#0b3d91" stroke-width="2.5"/>
+          {% if service.interconnection.value == 'backfeed_breaker' %}
+          <rect x="460" y="200" width="180" height="50" fill="#fff" stroke="#111" stroke-width="2"/>
+          <text x="550" y="220" text-anchor="middle" font-size="11" font-weight="700">MAIN LOAD CENTER</text>
+          <text x="550" y="238" text-anchor="middle" font-size="9" fill="#444">{{ service.main_breaker_a }}A main · bus {{ service.busbar_a or service.main_breaker_a }}A</text>
+          <line x1="550" y1="250" x2="550" y2="280" stroke="#0b5c2e" stroke-width="2.5"/>
+          <rect x="470" y="280" width="160" height="36" fill="#fff" stroke="#0b5c2e" stroke-width="2"/>
+          <text x="550" y="302" text-anchor="middle" font-size="11" font-weight="700" fill="#0b5c2e">BACKFEED {{ totals.max_backfeed_a|int if totals.max_backfeed_a else '??' }}A</text>
+          <line x1="550" y1="316" x2="550" y2="345" stroke="#0b5c2e" stroke-width="2.5"/>
+          {% else %}
+          <line x1="550" y1="168" x2="550" y2="345" stroke="#0b5c2e" stroke-width="2.5"/>
+          {% endif %}
+          <rect x="420" y="345" width="260" height="80" fill="#fff" stroke="#0b5c2e" stroke-width="2.5"/>
+          <text x="550" y="370" text-anchor="middle" font-size="12" font-weight="700" fill="#0b5c2e">
+            {% if inverters %}{{ inverters[0].manufacturer }} {{ inverters[0].model }}{% else %}INVERTER{% endif %}
+          </text>
+          <text x="550" y="390" text-anchor="middle" font-size="9">QTY {{ inverters[0].quantity if inverters else 1 }} · {{ totals.ac_a_continuous }}A cont. AC</text>
+          <text x="550" y="408" text-anchor="middle" font-size="9" fill="#444">{{ inverters[0].listing if inverters else 'UL 1741' }} · {{ inverters[0].ne_ma if inverters else '' }}</text>
+
+          <line x1="420" y1="385" x2="300" y2="385" stroke="#8a3b00" stroke-width="2"/>
+          <rect x="200" y="360" width="100" height="50" fill="#fff" stroke="#8a3b00" stroke-width="1.8"/>
+          <text x="250" y="382" text-anchor="middle" font-size="10" font-weight="700" fill="#8a3b00">BATTERY</text>
+          <text x="250" y="398" text-anchor="middle" font-size="8">{{ '%.0f'|format(totals.battery_kwh) }} kWh</text>
+
+          <line x1="680" y1="385" x2="800" y2="385" stroke="#6b5200" stroke-width="2"/>
+          <rect x="800" y="360" width="110" height="50" fill="#fff" stroke="#6b5200" stroke-width="1.8"/>
+          <text x="855" y="382" text-anchor="middle" font-size="10" font-weight="700" fill="#6b5200">PV ARRAY</text>
+          <text x="855" y="398" text-anchor="middle" font-size="8">{{ '%.2f'|format(totals.dc_kw) }} kWDC</text>
+
+          {% if critical %}
+          <line x1="550" y1="425" x2="550" y2="460" stroke="#0b5c2e" stroke-width="2.5"/>
+          <rect x="460" y="460" width="180" height="40" fill="#0b5c2e"/>
+          <text x="550" y="484" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">CRITICAL LOADS PANEL</text>
+          {% endif %}
+          {% endif %}
+
+          <text x="20" y="510" font-size="9" fill="#444">SLD NTS · L1/L2/N/G simplified as single path · GEC/EGC per NEC 250 · final conductor schedule on PV-5</text>
+        </svg>
+        <div class="legend">
+          <span><i style="background:#0b3d91"></i>Utility / non-BU AC</span>
+          <span><i style="background:#0b5c2e"></i>Backed-up / hybrid AC</span>
+          <span><i style="background:#8a3b00"></i>Battery DC</span>
+          <span><i style="background:#6b5200"></i>PV DC</span>
+          <span><i style="background:#8b0000"></i>RSD / ESS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Single-Line Diagram</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-3</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+{# ===================== PV-4 CALCS ===================== #}
+<section class="sheet" id="PV-4">
+  <div class="banner">
+    <div>
+      <h1>ELECTRICAL CALCULATIONS</h1>
+      <div class="sub">Temperature-corrected Voc · string currents · busbar 120% · continuous factors — work shown</div>
+    </div>
+    <div class="kw">PV-4<span>Calc sheet</span></div>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="three">
+        <div class="stat"><div class="big-num">{{ '%.3f'|format(totals.dc_kw) }}</div><div class="l">kWDC STC</div></div>
+        <div class="stat"><div class="big-num">{{ '%.2f'|format(totals.ac_kw_continuous) }}</div><div class="l">kWAC continuous</div></div>
+        <div class="stat"><div class="big-num">{{ '%.1f'|format(totals.ac_a_continuous) }}A</div><div class="l">Σ inverter Icont @ 240V</div></div>
+      </div>
+
+      <div class="panel">
+        <h2>Module nameplate (STC)</h2>
+        <table class="data">
+          <tr><th>Model</th><th>Qty</th><th>Pmax</th><th>Vmp</th><th>Imp</th><th>Voc</th><th>Isc</th><th>γVoc %/°C</th></tr>
+          {% for m in modules %}
+          <tr>
+            <td>{{ m.manufacturer }} {{ m.model }}</td><td>{{ m.quantity }}</td>
+            <td>{{ m.pmax_w }}</td><td>{{ m.vmp }}</td><td>{{ m.imp }}</td>
+            <td>{{ m.voc }}</td><td>{{ m.isc }}</td><td>{{ m.voc_temp_coeff_pct_per_c }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        <p class="tiny mono">DC total = Σ (qty × Pmax) = {{ '%.0f'|format(totals.dc_kw * 1000) }} W = {{ '%.3f'|format(totals.dc_kw) }} kW</p>
+      </div>
+
+      <div class="panel">
+        <h2>String calculations (record low {{ project.ambient.record_low_c }}°C)</h2>
+        <table class="data">
+          <tr>
+            <th>String</th><th>Series</th><th>Par</th><th>Voc_stc</th><th>Voc_cold</th>
+            <th>Inv Voc max</th><th>Isc_par</th><th>Imp_par</th><th>1.25×Isc</th><th>Result</th>
+          </tr>
+          {% for s in totals.string_calcs %}
+          <tr class="{{ 'pass' if s.voc_ok and s.imp_ok else 'fail' }}">
+            <td>{{ s.name }}</td>
+            <td>{{ s.modules_in_series }}</td>
+            <td>{{ s.parallel_strings }}</td>
+            <td class="mono">{{ '%.1f'|format(s.string_voc_stc) }} V</td>
+            <td class="mono">{{ '%.1f'|format(s.string_voc_cold) }} V</td>
+            <td class="mono">{{ s.max_voc_limit or '—' }}</td>
+            <td class="mono">{{ '%.2f'|format(s.parallel_isc) }} A</td>
+            <td class="mono">{{ '%.2f'|format(s.parallel_imp) }} A</td>
+            <td class="mono">{{ '%.2f'|format(s.ocpd_min_a) }} A</td>
+            <td>
+              <span class="badge {{ 'green' if s.voc_ok else 'red' }}">Voc {{ 'OK' if s.voc_ok else 'FAIL' }}</span>
+              <span class="badge {{ 'green' if s.imp_ok else 'red' }}">Imp {{ 'OK' if s.imp_ok else 'FAIL' }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% for s in totals.string_calcs %}
+        <p class="tiny mono">{{ s.name }}: {% for n in s.notes %}{{ n }} · {% endfor %}</p>
+        {% endfor %}
+      </div>
+
+      <div class="two">
+        <div class="panel">
+          <h2>Busbar / backfeed (when applicable)</h2>
+          {% if totals.busbar_120_rule %}
+          <p class="mono">{{ totals.busbar_120_rule.formula }}</p>
+          <p>
+            <span class="badge {{ 'green' if totals.busbar_120_rule.passes else 'red' }}">
+              {{ 'PASS' if totals.busbar_120_rule.passes else 'FAIL' }}
+            </span>
+            {{ totals.busbar_120_rule.code }}
+          </p>
+          {% else %}
+          <p class="tiny">120% busbar rule not applied (interconnection is not a simple load-side backfeed, or backfeed N/A). Hybrid / supply-side / feeder-tap topologies use different 705 rules — coordinate with AHJ.</p>
+          {% endif %}
+        </div>
+        <div class="panel">
+          <h2>Continuous current notes</h2>
+          <ul>
+            {% for n in totals.continuous_factor_notes %}<li>{{ n }}</li>{% endfor %}
+            <li>Inverter continuous AC current (Σ): <strong>{{ '%.2f'|format(totals.ac_a_continuous) }} A</strong></li>
+            <li>Suggested backfeed OCPD (≥125% where required): <strong>{{ totals.max_backfeed_a or '—' }} A</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="tb-head">CALC QA</div>
+      <div class="tb-row"><div class="lbl">Flags</div>
+        <div class="val">{% for f in totals.quality_flags %}<span class="badge blue">{{ f }}</span> {% endfor %}</div>
+      </div>
+      <div class="tb-row"><div class="lbl">Warnings</div>
+        <div class="val tiny">{% if totals.warnings %}{% for w in totals.warnings %}• {{ w }}<br/>{% endfor %}{% else %}None{% endif %}</div>
+      </div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">PV-4 CALCULATIONS</div></div>
+    </aside>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Electrical Calculations</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-4</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+{# ===================== PV-5 WIRE / BOM ===================== #}
+<section class="sheet" id="PV-5">
+  <div class="banner">
+    <div>
+      <h1>WIRE SCHEDULE &amp; BILL OF MATERIALS</h1>
+      <div class="sub">Design-basis conductors — EC to confirm ampacity, temperature, conduit fill, voltage drop</div>
+    </div>
+    <div class="kw">PV-5<span>Wire / BOM</span></div>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="panel">
+        <h2>Wire / raceway schedule</h2>
+        <table class="data">
+          <tr><th>ID</th><th>From</th><th>To</th><th>Conductors / raceway</th><th>OCPD</th><th>Notes</th></tr>
+          {% if wires %}
+            {% for w in wires %}
+            <tr>
+              <td>{{ w.name }}</td><td>{{ w.from_equip }}</td><td>{{ w.to_equip }}</td>
+              <td class="mono">{{ w.conductors }}</td><td>{{ w.ocpd }}</td><td>{{ w.notes }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td>W1</td><td>PV array / JB</td><td>Inverter PV inputs</td>
+              <td class="mono">PV wire per string · #10 Cu TYP · outdoor UV</td>
+              <td>String fuse if req.</td><td>Voc_cold per PV-4</td>
+            </tr>
+            <tr>
+              <td>W2</td><td>Battery bank</td><td>Inverter BAT+/−</td>
+              <td class="mono">Mfr cable kit or sized to continuous I × 1.25</td>
+              <td>Int. bat disco</td><td>Polarity · torque</td>
+            </tr>
+            <tr>
+              <td>W3</td><td>Service / disco</td><td>Inverter GRID</td>
+              <td class="mono">4-wire Cu/Al · ampacity ≥ path OCPD @ 75°C</td>
+              <td>{{ service.disconnect_rating_a }}A path</td><td>L1 L2 N EGC</td>
+            </tr>
+            <tr>
+              <td>W4</td><td>Inverter LOAD</td><td>BU panel / critical</td>
+              <td class="mono">Match panel main · 4-wire</td>
+              <td>Panel main</td><td>Backed-up path</td>
+            </tr>
+            <tr>
+              <td>W5</td><td>GEC / EGC system</td><td>Electrodes / equipment</td>
+              <td class="mono">Cu per NEC 250.66 / 250.122</td>
+              <td>—</td><td>Continuous where required</td>
+            </tr>
+          {% endif %}
+        </table>
+      </div>
+      <div class="panel">
+        <h2>Bill of materials (conceptual)</h2>
+        <table class="data">
+          <tr><th>Item</th><th>Description</th><th>Qty</th></tr>
+          {% for m in modules %}
+          <tr><td>PV module</td><td>{{ m.manufacturer }} {{ m.model }} ({{ m.pmax_w }}W)</td><td>{{ m.quantity }}</td></tr>
+          {% endfor %}
+          {% for i in inverters %}
+          <tr><td>Inverter</td><td>{{ i.manufacturer }} {{ i.model }}</td><td>{{ i.quantity }}</td></tr>
+          {% endfor %}
+          {% for b in batteries if b.quantity %}
+          <tr><td>Battery</td><td>{{ b.manufacturer }} {{ b.model }} ({{ b.usable_kwh }} kWh)</td><td>{{ b.quantity }}</td></tr>
+          {% endfor %}
+          <tr><td>Racking</td><td>{{ array.racking }}</td><td>1 lot</td></tr>
+          <tr><td>Attachments</td><td>{{ array.attachment }}</td><td>per layout</td></tr>
+          <tr><td>Labels</td><td>NEC 690/705/706 placard set</td><td>1 set</td></tr>
+          <tr><td>RSD initiator</td><td>If PV RSD required</td><td>1</td></tr>
+          {% if service.ac_disco_a %}
+          <tr><td>AC disco</td><td>{{ service.ac_disco_a }}A lockable visible</td><td>1</td></tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="tb-head">TITLE BLOCK</div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">WIRE &amp; BOM</div></div>
+      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-5</div></div>
+      <div class="tb-row"><div class="lbl">Note</div><div class="val tiny">Final wire sizes stamped by EC/PE as required</div></div>
+    </aside>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Wire Schedule &amp; BOM</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-5</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+{# ===================== PV-6 LABELS ===================== #}
+<section class="sheet" id="PV-6">
+  <div class="banner">
+    <div>
+      <h1>WARNING LABELS &amp; PLACARDS</h1>
+      <div class="sub">Permanent labels · ANSI Z535.4 · NEC 110.21(B), 690, 705, 706</div>
+    </div>
+    <div class="kw">PV-6<span>Labels</span></div>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="two">
+        <div class="panel" style="border-color:#c00;background:#fff5f5">
+          <h2>WARNING — dual power source</h2>
+          <p><strong>DUAL POWER SOURCE</strong><br/>Second source is photovoltaic / energy storage system.</p>
+          <p class="tiny">Location: point of interconnection, meter, disco as required by AHJ.<br/>Refs: NEC 705 / 690.59 context</p>
+        </div>
+        <div class="panel" style="border-color:#c00;background:#fff5f5">
+          <h2>WARNING — multiple power sources</h2>
+          <p>Power to this building may also be supplied from PV/ESS. Disconnects located as shown on SLD.</p>
+          <p class="tiny">Location: utility service entrance / main disco.</p>
+        </div>
+        <div class="panel">
+          <h2>PV DC circuit</h2>
+          <p><strong>CAUTION: PV DC CIRCUIT</strong> — energized during daylight.</p>
+          <p class="tiny">Every 10 ft on DC raceways where required · UV-resistant label.</p>
+        </div>
+        <div class="panel">
+          <h2>Rapid shutdown</h2>
+          <p><strong>SOLAR PV SYSTEM EQUIPPED WITH RAPID SHUTDOWN</strong></p>
+          <p class="tiny">Initiator location per SLD · NEC 690.12 · wording per AHJ edition.</p>
+        </div>
+        {% if totals.battery_kwh %}
+        <div class="panel">
+          <h2>Energy storage disconnect</h2>
+          <p>ESS DISCONNECT · Nominal system voltage per equipment · max fault current per mfr.</p>
+          <p class="tiny">NEC 706 · apply at battery / hybrid disconnect means.</p>
+        </div>
+        {% endif %}
+        <div class="panel">
+          <h2>Directory / plaque</h2>
+          <p>Building directory showing PV, ESS, disco locations (site map sketch field-verified).</p>
+        </div>
+      </div>
+      <div class="panel tiny">
+        Labels permanent, engraved/printed, contrasting color, not handwritten. Do not cover manufacturer labels.
+        Exact text shall match the NEC edition adopted by {{ meta.ahj or 'the AHJ' }}.
+      </div>
+    </div>
+    <aside class="side">
+      <div class="tb-head">TITLE BLOCK</div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">LABELS &amp; PLACARDS</div></div>
+      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-6</div></div>
+    </aside>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Warning Labels &amp; Placards</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-6</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+{# ===================== PV-7 QA ===================== #}
+<section class="sheet" id="PV-7">
+  <div class="banner">
+    <div>
+      <h1>QA / AHJ SUBMITTAL CHECKLIST</h1>
+      <div class="sub">The sheet permit-mills skip — force completeness before stamp / upload</div>
+    </div>
+    <div class="kw">PV-7<span>Quality gate</span></div>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="qa-grid">
+        {% set items = [
+          'Site address, APN, utility, AHJ correct on every title block',
+          'Module count × Pmax matches cover kWDC',
+          'Inverter continuous kWAC on cover matches equipment schedule (not marketing surge)',
+          'Cold Voc string calc ≤ inverter max Voc (PV-4)',
+          'Imp / Isc within MPPT and OCPD limits (PV-4)',
+          'Busbar 120% rule checked if load-side backfeed (PV-4)',
+          'Interconnection method matches SLD (PV-3)',
+          'Backup mode matches customer scope (half-home / dual / critical)',
+          'For dual 200A disco whole-home: ≥1 hybrid per disco or documented exception',
+          'RSD initiator shown when PV present (690.12)',
+          'ESS disconnect / labels if batteries present (706)',
+          'Wire schedule present; EC confirms final ampacity',
+          'Wind / exposure / attachment basis stated (PV-2)',
+          'Fire setbacks acknowledged; field roof plan to verify',
+          'Governing code editions match AHJ adoption',
+          'No handwritten labels; placard set ordered',
+          'Equipment cut sheets attached or linked (submittal package)',
+          'Structural PE letter attached if AHJ requires',
+          'Utility interconnection application consistent with export settings',
+          'Revision block filled; supersedes prior set if any'
+        ] %}
+        {% for item in items %}
+        <div class="qa-item"><div class="qa-box"></div><div>{{ item }}</div></div>
+        {% endfor %}
+      </div>
+      <div class="panel" style="margin-top:6px">
+        <h2>Generator quality commitment</h2>
+        <p class="tiny">
+          This planset was produced by <strong>Planset Generator</strong> with explicit electrical work, hybrid topology awareness,
+          and a QA gate. It is designed to exceed typical PV-0…PV-5 permit packages that recycle boilerplate, misstate kWAC,
+          and omit calculation work. It is still illustrative until reviewed/stamped by the responsible design professional
+          and accepted by the AHJ and utility.
+        </p>
+        {% if totals.warnings %}
+        <div class="warn" style="margin-top:4px"><strong>Open flags before submittal:</strong>
+          <ul>{% for w in totals.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <aside class="side">
+      <div class="tb-head">SIGN-OFF</div>
+      <div class="tb-row"><div class="lbl">Designer</div><div class="val">{{ meta.designer }}</div></div>
+      <div class="tb-row"><div class="lbl">Date</div><div class="val">{{ prepared_date }}</div></div>
+      <div class="tb-row"><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+      <div class="tb-row"><div class="lbl">EC review</div><div class="val">________________</div></div>
+      <div class="tb-row"><div class="lbl">PE stamp</div><div class="val">________________</div></div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">PV-7 QA CHECKLIST</div></div>
+    </aside>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">QA / AHJ Submittal Checklist</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-7</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
+  </div>
+</section>
+
+</body>
+</html>
