@@ -195,23 +195,31 @@ def _score_doc(cat: str, path: Path, blob: str, project: ProjectInput) -> tuple[
         if "eg4" in manuf and "eg4" in fname:
             score += 3.0
 
-    # batteries
+    # batteries — require brand alignment (don't attach EG4 PDF to Duracell job)
     for b in project.batteries:
         if b.quantity <= 0:
             continue
         bm = f"{b.manufacturer} {b.model}".lower()
-        if "wallmount" in bm and "wallmount" in fname:
+        brand_ok = False
+        if "eg4" in bm and "eg4" in fname:
+            brand_ok = True
+        if "duracell" in bm and "duracell" in fname:
+            brand_ok = True
+        if "ecoflow" in bm and "ecoflow" in fname:
+            brand_ok = True
+        if brand_ok and "wallmount" in fname:
             score += 8.0
             reasons.append("WallMount battery")
-        if "powerpro" in bm and "powerpro" in fname:
+        if brand_ok and "powerpro" in fname:
             score += 8.0
-        if "eg4" in bm and "eg4" in fname and "battery" in fname:
-            score += 4.0
+            reasons.append("PowerPro battery")
+        if brand_ok and ("battery" in fname or "ess" in fname):
+            score += 5.0
         if "chargeverter" in bm and "chargeverter" in fname:
             score += 7.0
 
-    # disconnect / GridBOSS
-    if project.service.interconnection.value == "gridboss_mid" or "gridboss" in blob:
+    # disconnect / GridBOSS — only if topology uses it
+    if project.service.interconnection.value == "gridboss_mid":
         if "grid" in fname and "boss" in fname:
             score += 10.0
             reasons.append("GridBOSS")

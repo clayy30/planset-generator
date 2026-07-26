@@ -101,9 +101,10 @@ def build_segments(project: ProjectInput, totals: SystemTotals) -> list[Seg]:
     disco = project.service.disconnect_rating_a
     ac_wire = _awg_for_amps(max(inv_ocpd, cont_a * 1.25))
     feed_wire = _awg_for_amps(disco)
-    bat_a = 200  # hybrid battery class per Duracell/EG4 integrated
+    # Battery DC OCPD class — use integrated hybrid rating; cap reasonable residential
+    bat_a = 200
     if inv and inv.battery_cont_w:
-        bat_a = max(100, int(inv.battery_cont_w / 48 * 1.25 / 5) * 5)
+        bat_a = min(200, max(100, int(inv.battery_cont_w / 48 * 1.25 / 5) * 5))
 
     segs: list[Seg] = []
 
@@ -340,6 +341,9 @@ def _sld_half_home(
     ac_w = _awg_for_amps(max(inv_ocpd, cont_a * 1.25))
     egc = _egc_for_ocpd(disco)
     conduit = _conduit_for_fill(4, feed)
+    inv = project.inverters[0] if project.inverters else None
+    inv_ne_ma = inv.ne_ma if inv else "NEMA 3R"
+    inv_qty = inv.quantity if inv else 1
 
     load_title = "CRITICAL LOADS PANEL" if critical else "BACKED-UP LOAD CENTER #1"
     bat_kwh = totals.battery_kwh
@@ -400,7 +404,7 @@ def _sld_half_home(
   <!-- HYBRID INVERTER big box -->
   <rect x="70" y="348" width="280" height="110" fill="#fff" stroke="#0b5c2e" stroke-width="2.8"/>
   <text x="210" y="368" text-anchor="middle" font-size="12" font-weight="700" fill="#0b5c2e" font-family="Segoe UI,Arial">(N) {inv_name}</text>
-  <text x="210" y="384" text-anchor="middle" font-size="9" font-family="Segoe UI,Arial">UL 1741 hybrid · {inv.ne_ma if inv else "NEMA 3R"} · qty {inv.quantity if inv else 1}</text>
+  <text x="210" y="384" text-anchor="middle" font-size="9" font-family="Segoe UI,Arial">UL 1741 hybrid · {inv_ne_ma} · qty {inv_qty}</text>
   <text x="85" y="404" font-size="9" font-family="Segoe UI,Arial">PORTS:</text>
   <text x="85" y="418" font-size="8.5" font-family="Segoe UI,Arial">• GRID IN ← Disco #1 ({pass_a}A pass-through max)</text>
   <text x="85" y="432" font-size="8.5" font-family="Segoe UI,Arial">• LOAD OUT → {load_title}</text>
