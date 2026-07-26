@@ -300,11 +300,12 @@ def match_equipment(project: ProjectInput, max_docs: int = 9) -> list[SpecDoc]:
     # score every file
     candidates: list[SpecDoc] = []
     for cat, path in _iter_pdfs() or []:
-        score, reason = _score_doc(cat, path, blob, project)
-        slot = _part_slot(path, cat)
-        score += _slot_preference(path, slot)
-        if score < 3.0:
+        base, reason = _score_doc(cat, path, blob, project)
+        # Require a real project match before cut-sheet preference can promote a file
+        if base < 3.5:
             continue
+        slot = _part_slot(path, cat)
+        score = base + _slot_preference(path, slot)
         candidates.append(
             SpecDoc(
                 path=path,
