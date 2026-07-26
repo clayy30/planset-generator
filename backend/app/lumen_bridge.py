@@ -29,43 +29,28 @@ from .models import (
 )
 
 
-# Electrical defaults when sales proposal only has marketing names
-_MODULE_DEFAULTS: dict[str, dict[str, float]] = {
-    "rec": {
-        "pmax_w": 400,
-        "vmp": 37.2,
-        "imp": 10.76,
-        "voc": 44.8,
-        "isc": 11.45,
-        "voc_temp_coeff_pct_per_c": -0.26,
-        "length_in": 71.7,
-        "width_in": 40.9,
-        "weight_lb": 45.0,
-    },
-    "qcells": {
-        "pmax_w": 400,
-        "vmp": 37.0,
-        "imp": 10.81,
-        "voc": 45.0,
-        "isc": 11.5,
-        "voc_temp_coeff_pct_per_c": -0.27,
-        "length_in": 74.0,
-        "width_in": 41.1,
-        "weight_lb": 46.0,
-    },
-    "canadian": {
-        "pmax_w": 450,
-        "vmp": 41.5,
-        "imp": 10.85,
-        "voc": 49.5,
-        "isc": 11.5,
-        "voc_temp_coeff_pct_per_c": -0.27,
-        "length_in": 82.4,
-        "width_in": 44.6,
-        "weight_lb": 48.5,
-    },
-    "default": {
-        "pmax_w": 400,
+def _pick_module_defaults(code: str, manufacturer: str, watts: float | None) -> dict[str, float]:
+    """Prefer materials_catalog match, then fall back to scaled defaults."""
+    from .materials_catalog import find_module
+
+    hit = find_module(f"{code} {manufacturer}")
+    if hit:
+        return {
+            "pmax_w": float(hit["pmax_w"]),
+            "vmp": float(hit["vmp"]),
+            "imp": float(hit["imp"]),
+            "voc": float(hit["voc"]),
+            "isc": float(hit["isc"]),
+            "voc_temp_coeff_pct_per_c": float(hit["voc_temp_coeff_pct_per_c"]),
+            "length_in": float(hit["length_in"]),
+            "width_in": float(hit["width_in"]),
+            "weight_lb": float(hit.get("weight_lb") or 46),
+            "manufacturer": hit["manufacturer"],
+            "model": hit["model"],
+        }
+
+    d = {
+        "pmax_w": 400.0,
         "vmp": 37.0,
         "imp": 10.8,
         "voc": 45.0,
@@ -74,22 +59,8 @@ _MODULE_DEFAULTS: dict[str, dict[str, float]] = {
         "length_in": 74.0,
         "width_in": 41.0,
         "weight_lb": 46.0,
-    },
-}
-
-
-def _pick_module_defaults(code: str, manufacturer: str, watts: float | None) -> dict[str, float]:
-    hay = f"{code} {manufacturer}".lower()
-    if "rec" in hay or "alpha" in hay:
-        d = dict(_MODULE_DEFAULTS["rec"])
-    elif "qcell" in hay or "q.peak" in hay:
-        d = dict(_MODULE_DEFAULTS["qcells"])
-    elif "canadian" in hay or "cs6" in hay or "tophiku" in hay:
-        d = dict(_MODULE_DEFAULTS["canadian"])
-    else:
-        d = dict(_MODULE_DEFAULTS["default"])
+    }
     if watts and watts > 0:
-        # Scale rough electricals with wattage vs template pmax
         scale = watts / d["pmax_w"]
         d["pmax_w"] = watts
         d["imp"] = round(d["imp"] * scale, 2)
@@ -147,6 +118,8 @@ def lumen_to_project_input(payload: dict[str, Any]) -> ProjectInput:
     mod_code = mod.get("code") or "PV Module"
     mod_mfr = mod.get("manufacturer") or "Tier-1"
     defaults = _pick_module_defaults(mod_code, mod_mfr, watts)
+    mod_mfr = str(defaults.get("manufacturer") or mod_mfr)
+    mod_code = str(defaults.get("model") or mod_code)
 
     modules = [
         ModuleSpec(
@@ -165,63 +138,98 @@ def lumen_to_project_input(payload: dict[str, Any]) -> ProjectInput:
         )
     ]
 
+    from .materials_catalog import find_battery, find_inverter, find_racking
+
     inv_code = inv.get("code") or "Inverter"
     inv_mfr = inv.get("manufacturer") or "Inverter OEM"
     inv_qty = int(inv.get("quantity") or 1)
+    inv_hit = find_inverter(f"{inv_code} {inv_mfr}")
     has_battery = bool(system.get("hasBattery") or bat)
 
-    # Microinverters: qty ≈ modules; string/hybrid: estimate continuous AC from system size
-    is_micro = any(x in inv_code.lower() for x in ("iq8", "enphase", "micro"))
-    if is_micro:
-        cont_w = min(watts * 0.96, 380)  # per micro
-        cont_a = round(cont_w / 240, 2)
-        inv_qty = panel_count
-        max_pv = watts
-        max_voc = defaults["voc"] * 1.1
-        mppt = 1
+    if inv_hit:
+        inv_mfr = inv_hit["manufacturer"]
+        inv_code = inv_hit["model"]
+        is_micro = inv_hit.get("topology") == "micro"
+        cont_w = float(inv_hit["continuous_ac_w"])
+        cont_a = float(inv_hit["continuous_ac_a"])
+        inv_qty = panel_count if is_micro else int(inv_hit.get("quantity_default") or 1)
+        max_pv = inv_hit.get("max_pv_w")
+        max_voc = inv_hit.get("max_voc")
+        mppt = int(inv_hit.get("mppt_count") or 1)
+        max_imp = inv_hit.get("max_imp_per_mppt")
+        passthrough = inv_hit.get("passthrough_a")
+        listing = inv_hit.get("listing") or "UL 1741"
     else:
-        cont_w = max(kw_stc * 1000 * 0.95, 3000)
-        cont_a = round(cont_w / 240, 2)
-        max_pv = kw_stc * 1000 * 1.3
-        max_voc = 500
-        mppt = 2 if has_battery else 1
+        is_micro = any(x in inv_code.lower() for x in ("iq8", "enphase", "micro"))
+        if is_micro:
+            cont_w = min(watts * 0.96, 380)
+            cont_a = round(cont_w / 240, 2)
+            inv_qty = panel_count
+            max_pv = watts
+            max_voc = defaults["voc"] * 1.1
+            mppt = 1
+        else:
+            cont_w = max(kw_stc * 1000 * 0.95, 3000)
+            cont_a = round(cont_w / 240, 2)
+            max_pv = kw_stc * 1000 * 1.3
+            max_voc = 500
+            mppt = 2 if has_battery else 1
+        max_imp = defaults["imp"] * 1.25
+        passthrough = 200 if has_battery else None
+        listing = "UL 1741"
 
     inverters = [
         InverterSpec(
             manufacturer=inv_mfr,
             model=inv_code,
             quantity=inv_qty,
-            continuous_ac_w=cont_w if not is_micro else cont_w,
+            continuous_ac_w=cont_w,
             continuous_ac_a=cont_a,
             max_ac_a=cont_a,
             nominal_vac=240,
             max_pv_w=max_pv,
             max_voc=max_voc,
             mppt_count=mppt,
-            max_imp_per_mppt=defaults["imp"] * 1.25,
-            passthrough_a=200 if has_battery else None,
+            max_imp_per_mppt=max_imp,
+            passthrough_a=passthrough,
             battery_cont_w=(float(bat.get("kwh") or system.get("batteryKwh") or 0) * 1000 * 0.5)
             if has_battery
             else None,
-            listing="UL 1741",
+            listing=listing,
         )
     ]
 
     batteries: list[BatterySpec] = []
     if has_battery:
-        batteries.append(
-            BatterySpec(
-                manufacturer=(bat.get("code") or "Battery").split()[0]
-                if bat.get("code")
-                else "ESS",
-                model=bat.get("code") or "Home Battery",
-                quantity=int(bat.get("quantity") or 1),
-                usable_kwh=float(
-                    system.get("batteryKwh") or bat.get("kwh") or 13.5
-                ),
-                nominal_v=48,
+        bat_hit = find_battery(str(bat.get("code") or system.get("batteryKwh") or "powerwall"))
+        if bat_hit and bat_hit.get("id") != "none":
+            batteries.append(
+                BatterySpec(
+                    manufacturer=bat_hit["manufacturer"],
+                    model=bat_hit["model"],
+                    quantity=int(bat.get("quantity") or 1),
+                    usable_kwh=float(bat_hit["usable_kwh"]),
+                    nominal_v=float(bat_hit.get("nominal_v") or 48),
+                    max_charge_a=bat_hit.get("max_charge_a"),
+                    max_discharge_a=bat_hit.get("max_discharge_a"),
+                )
             )
-        )
+        else:
+            batteries.append(
+                BatterySpec(
+                    manufacturer=(bat.get("code") or "Battery").split()[0]
+                    if bat.get("code")
+                    else "ESS",
+                    model=bat.get("code") or "Home Battery",
+                    quantity=int(bat.get("quantity") or 1),
+                    usable_kwh=float(
+                        system.get("batteryKwh") or bat.get("kwh") or 13.5
+                    ),
+                    nominal_v=48,
+                )
+            )
+
+    rack_hit = find_racking("ironridge xr-100 flashfoot")
 
     # Roof planes from panel groups
     planes: list[RoofPlane] = []
@@ -258,6 +266,18 @@ def lumen_to_project_input(payload: dict[str, Any]) -> ProjectInput:
                 module_count=panel_count,
             )
         ]
+
+    notes = [
+        "Imported from Lumen Proposal Studio.",
+        "Equipment matched from materials catalog when possible — verify datasheets before stamp/submit.",
+        f"Lumen project id: {p.get('id') or 'unknown'}",
+    ]
+    if p.get("solarResource"):
+        sr = p["solarResource"]
+        notes.append(
+            f"Site solar resource: {sr.get('peakSunHoursAnnual')} PSH/day · "
+            f"{sr.get('specificYieldKwhPerKw')} kWh/kW/yr ({sr.get('source')})"
+        )
 
     # Simple string design for non-micros; micros use 1 module per "string" abstractly
     strings: list[StringDesign] = []
@@ -298,18 +318,6 @@ def lumen_to_project_input(payload: dict[str, Any]) -> ProjectInput:
     utility = bills.get("utilityName") or "Georgia Power"
     company = org.get("name") or "Savannah Solar Power"
     project_name = f"{customer} — {system.get('title') or system.get('name') or f'{kw_stc:.2f} kW'}"
-
-    notes = [
-        "Imported from Lumen Proposal Studio.",
-        "Electrical nameplate values for modules/inverters may use catalog defaults — verify against manufacturer datasheets before stamp/submit.",
-        f"Lumen project id: {p.get('id') or 'unknown'}",
-    ]
-    if p.get("solarResource"):
-        sr = p["solarResource"]
-        notes.append(
-            f"Site solar resource: {sr.get('peakSunHoursAnnual')} PSH/day · "
-            f"{sr.get('specificYieldKwhPerKw')} kWh/kW/yr ({sr.get('source')})"
-        )
 
     return ProjectInput(
         custom_title="PHOTOVOLTAIC SYSTEM — PRELIMINARY FROM SALES PROPOSAL",
@@ -357,11 +365,23 @@ def lumen_to_project_input(payload: dict[str, Any]) -> ProjectInput:
         strings=strings,
         array=ArrayLayout(
             planes=planes,
-            structural=StructuralSystem(),
+            structural=StructuralSystem(
+                racking_mfr=(rack_hit or {}).get("manufacturer", "IronRidge"),
+                rail_model=(rack_hit or {}).get("rail_model", "XR-100"),
+                attachment_hardware=(rack_hit or {}).get("attachment", "FlashFoot 2"),
+                lag_size=(rack_hit or {}).get("lag_size", '5/16" x 4.75" SS'),
+                max_attachment_spacing_in=float(
+                    (rack_hit or {}).get("max_attachment_spacing_in") or 48
+                ),
+            ),
             roof_planes=len(planes),
             modules_per_plane=[pl.module_count for pl in planes],
             azimuth_deg=[pl.azimuth_deg for pl in planes],
             tilt_deg=[pl.tilt_deg for pl in planes],
+            racking=(rack_hit or {}).get("label")
+            or "IronRidge XR-100 / FlashFoot 2 or AHJ-approved equal",
+            attachment=(rack_hit or {}).get("attachment")
+            or '5/16" x 4.75" SS lag, min 2-1/2" embedment into rafter',
         ),
         notes_construction=notes,
         notes_electrical=[
