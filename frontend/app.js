@@ -94,7 +94,9 @@ function buildProject() {
       revision_note: "INITIAL RELEASE",
     },
     criteria: {
+      roof_type: val("roof_type") || "comp_shingle",
       roof_frame: val("roof_frame"),
+      stories: num("stories") || 1,
       wind_speed_mph: num("wind_speed_mph") || 130,
       wind_exposure: val("wind_exposure") || "B",
       attic_run_required: true,
@@ -216,11 +218,27 @@ function applyPreset(data) {
   $("production_meter").checked = !!p.service.production_meter;
 
   if (p.criteria) {
-    $("roof_frame").value = p.criteria.roof_frame || $("roof_frame").value;
-    $("wind_speed_mph").value = p.criteria.wind_speed_mph ?? 130;
-    $("wind_exposure").value = p.criteria.wind_exposure || "B";
+    setSelectOrValue("roof_frame", p.criteria.roof_frame);
+    setSelectOrValue("wind_speed_mph", p.criteria.wind_speed_mph ?? 130);
+    setSelectOrValue("wind_exposure", p.criteria.wind_exposure || "B");
+    if ($("roof_type") && p.criteria.roof_type) $("roof_type").value = p.criteria.roof_type;
+    if ($("stories") && p.criteria.stories) $("stories").value = String(p.criteria.stories);
   }
-  if (p.ambient) $("record_low_c").value = p.ambient.record_low_c ?? -5;
+  if (p.ambient) setSelectOrValue("record_low_c", p.ambient.record_low_c ?? -5);
+  if (p.meta) {
+    setSelectOrValue("state", p.meta.address?.state || "GA");
+    setSelectOrValue("utility", p.meta.utility);
+    setSelectOrValue("ahj", p.meta.ahj);
+    setSelectOrValue("designer", p.meta.designer);
+    setSelectOrValue("company", p.meta.company);
+    setSelectOrValue("revision", p.meta.revision);
+  }
+  setSelectOrValue("main_breaker_a", p.service?.main_breaker_a);
+  setSelectOrValue("busbar_a", p.service?.busbar_a);
+  setSelectOrValue("num_disconnects", p.service?.num_disconnects);
+  setSelectOrValue("disconnect_rating_a", p.service?.disconnect_rating_a);
+  setSelectOrValue("backfeed_breaker_a", p.service?.backfeed_breaker_a);
+  setSelectOrValue("ac_disco_a", p.service?.ac_disco_a);
 
   const m = p.modules[0];
   $("mod_mfr").value = m.manufacturer;
@@ -261,28 +279,33 @@ function applyPreset(data) {
   }
   if (p.array && p.array.planes && p.array.planes.length) {
     const a = p.array.planes[0];
-    $("p1_name").value = a.name || "ROOF #1";
+    setSelectOrValue("p1_name", a.name || "ROOF #1 (SOUTH)");
     $("p1_mods").value = a.module_count;
     $("p1_eave").value = a.eave_width_ft;
     $("p1_depth").value = a.ridge_depth_ft;
-    $("p1_tilt").value = a.tilt_deg;
-    $("p1_az").value = a.azimuth_deg;
-    $("p1_sb_ridge").value = a.setback_ridge_in ?? 36;
-    $("p1_sb_eave").value = a.setback_eave_in ?? 18;
-    $("p1_sb_l").value = a.setback_left_in ?? 18;
-    $("p1_sb_r").value = a.setback_right_in ?? 18;
-    $("p1_rafter").value = a.rafter_spacing_in ?? 24;
+    setSelectOrValue("p1_tilt", a.tilt_deg);
+    setSelectOrValue("p1_az", a.azimuth_deg);
+    setSelectOrValue("p1_sb_ridge", a.setback_ridge_in ?? 36);
+    setSelectOrValue("p1_sb_eave", a.setback_eave_in ?? 18);
+    setSelectOrValue("p1_sb_l", a.setback_left_in ?? 18);
+    setSelectOrValue("p1_sb_r", a.setback_right_in ?? 18);
+    setSelectOrValue("p1_rafter", a.rafter_spacing_in ?? 24);
     if (p.array.planes[1]) {
       const b = p.array.planes[1];
-      $("p2_name").value = b.name || "ROOF #2";
+      setSelectOrValue("p2_name", b.name || "ROOF #2 (SOUTH)");
       $("p2_mods").value = b.module_count;
       $("p2_eave").value = b.eave_width_ft;
       $("p2_depth").value = b.ridge_depth_ft;
-      $("p2_tilt").value = b.tilt_deg;
-      $("p2_az").value = b.azimuth_deg;
+      setSelectOrValue("p2_tilt", b.tilt_deg);
+      setSelectOrValue("p2_az", b.azimuth_deg);
     } else {
       $("p2_mods").value = 0;
     }
+  }
+  if (p.strings && p.strings.length) {
+    setSelectOrValue("str_series", p.strings[0].modules_in_series);
+    setSelectOrValue("str_par", p.strings[0].parallel_strings);
+    setSelectOrValue("str_count", p.strings.length);
   }
   updateSnapshot();
 }
@@ -427,6 +450,25 @@ async function loadProjects() {
     if (!rows.length) ul.innerHTML = "<li style='cursor:default;opacity:0.6'>No saved projects yet</li>";
   } catch {
     /* ignore */
+  }
+}
+
+/** Set select value; if missing option, leave as-is or add temporary option */
+function setSelectOrValue(id, value) {
+  const el = $(id);
+  if (!el || value === undefined || value === null || value === "") return;
+  const v = String(value);
+  if (el.tagName === "SELECT") {
+    const exists = Array.from(el.options).some((o) => o.value === v);
+    if (!exists) {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      el.appendChild(opt);
+    }
+    el.value = v;
+  } else {
+    el.value = v;
   }
 }
 

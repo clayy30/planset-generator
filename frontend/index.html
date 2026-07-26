@@ -42,24 +42,100 @@
         <!-- STEP 0 -->
         <section class="step" data-step="0">
           <h2>Project &amp; site</h2>
+          <p class="hint">Use dropdowns wherever possible — type only free-form names and street address.</p>
           <div class="grid2">
             <label>Project name <input id="project_name" value="DPC Max Hybrid 15 — 400A Dual Disco" /></label>
             <label>Customer <input id="customer_name" value="Sample Customer" /></label>
             <label>Address line 1 <input id="line1" value="123 Example Rd" /></label>
-            <label>City <input id="city" value="Guyton" /></label>
-            <label>State <input id="state" value="GA" /></label>
-            <label>ZIP <input id="zip" value="31312" /></label>
+            <label>City
+              <input id="city" list="city-list" value="Guyton" />
+              <datalist id="city-list">
+                <option value="Savannah" /><option value="Pooler" /><option value="Guyton" />
+                <option value="Rincon" /><option value="Richmond Hill" /><option value="Springfield" />
+                <option value="Hinesville" /><option value="Statesboro" /><option value="Brunswick" />
+                <option value="Bluffton" /><option value="Hilton Head Island" /><option value="Hardeeville" />
+                <option value="Charleston" /><option value="Summerville" /><option value="Atlanta" />
+              </datalist>
+            </label>
+            <label>State
+              <select id="state">
+                <option value="GA" selected>GA — Georgia</option>
+                <option value="SC">SC — South Carolina</option>
+                <option value="FL">FL — Florida</option>
+                <option value="NC">NC — North Carolina</option>
+                <option value="AL">AL — Alabama</option>
+                <option value="TN">TN — Tennessee</option>
+                <option value="TX">TX — Texas</option>
+                <option value="VA">VA — Virginia</option>
+              </select>
+            </label>
+            <label>ZIP <input id="zip" value="31312" inputmode="numeric" /></label>
             <label>APN / PIN <input id="apn" value="" placeholder="auto from GIS" /></label>
-            <label>County <input id="county" value="" placeholder="auto from GIS" /></label>
-            <label>Utility <input id="utility" value="Georgia Power" /></label>
-            <label>AHJ <input id="ahj" value="Effingham County" /></label>
+            <label>County
+              <input id="county" list="county-list" value="" placeholder="auto from GIS" />
+              <datalist id="county-list">
+                <option value="Chatham" /><option value="Effingham" /><option value="Bryan" />
+                <option value="Liberty" /><option value="Bulloch" /><option value="Glynn" />
+                <option value="Beaufort" /><option value="Jasper" /><option value="Charleston" />
+                <option value="Berkeley" /><option value="Dorchester" />
+              </datalist>
+            </label>
+            <label>Utility
+              <select id="utility">
+                <option value="Georgia Power" selected>Georgia Power</option>
+                <option value="Savannah Electric / Georgia Power">Savannah Electric / Georgia Power</option>
+                <option value="Dominion Energy">Dominion Energy</option>
+                <option value="Duke Energy">Duke Energy</option>
+                <option value="Coastal Electric Cooperative">Coastal Electric Cooperative</option>
+                <option value="Excelsior EMC">Excelsior EMC</option>
+                <option value="Planters EMC">Planters EMC</option>
+                <option value="Canoochee EMC">Canoochee EMC</option>
+                <option value="Other / TBD">Other / TBD</option>
+              </select>
+            </label>
+            <label>AHJ
+              <select id="ahj">
+                <option value="Effingham County" selected>Effingham County</option>
+                <option value="Chatham County">Chatham County</option>
+                <option value="City of Savannah">City of Savannah</option>
+                <option value="Bryan County">Bryan County</option>
+                <option value="Liberty County">Liberty County</option>
+                <option value="Bulloch County">Bulloch County</option>
+                <option value="Glynn County">Glynn County</option>
+                <option value="Beaufort County">Beaufort County</option>
+                <option value="Jasper County">Jasper County</option>
+                <option value="Charleston County">Charleston County</option>
+                <option value="Other / TBD">Other / TBD</option>
+              </select>
+            </label>
             <label>Owner of record <input id="owner_of_record" value="" placeholder="auto from GIS" /></label>
             <label>Acres <input id="acres" value="" placeholder="auto" /></label>
             <label>Lat <input id="latitude" value="" placeholder="auto" /></label>
             <label>Lon <input id="longitude" value="" placeholder="auto" /></label>
-            <label>Designer <input id="designer" value="Savannah Solar Power" /></label>
-            <label>Company <input id="company" value="Savannah Solar Power" /></label>
-            <label>Revision <input id="revision" value="0" /></label>
+            <label>Designer
+              <select id="designer">
+                <option value="Savannah Solar Power" selected>Savannah Solar Power</option>
+                <option value="Lumen Solar">Lumen Solar</option>
+                <option value="C² Power">C² Power</option>
+              </select>
+            </label>
+            <label>Company
+              <select id="company">
+                <option value="Savannah Solar Power" selected>Savannah Solar Power</option>
+                <option value="Lumen Solar">Lumen Solar</option>
+                <option value="C² Power">C² Power</option>
+              </select>
+            </label>
+            <label>Revision
+              <select id="revision">
+                <option value="0" selected>0 — Initial</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+              </select>
+            </label>
           </div>
           <div class="row">
             <button type="button" class="primary" id="btn-gis">Lookup parcel (GIS)</button>
@@ -80,10 +156,40 @@
                 <option selected>400</option>
               </select>
             </label>
-            <label>Main breaker A <input type="number" id="main_breaker_a" value="400" /></label>
-            <label>Busbar A (if known) <input type="number" id="busbar_a" value="400" /></label>
-            <label># Disconnects <input type="number" id="num_disconnects" value="2" /></label>
-            <label>Disco rating A <input type="number" id="disconnect_rating_a" value="200" /></label>
+            <label>Main breaker A
+              <select id="main_breaker_a">
+                <option value="100">100</option>
+                <option value="125">125</option>
+                <option value="150">150</option>
+                <option value="200">200</option>
+                <option value="225">225</option>
+                <option value="400" selected>400</option>
+              </select>
+            </label>
+            <label>Busbar A (if known)
+              <select id="busbar_a">
+                <option value="">Unknown</option>
+                <option value="100">100</option>
+                <option value="125">125</option>
+                <option value="200">200</option>
+                <option value="225">225</option>
+                <option value="400" selected>400</option>
+              </select>
+            </label>
+            <label># Disconnects
+              <select id="num_disconnects">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+              </select>
+            </label>
+            <label>Disco rating A
+              <select id="disconnect_rating_a">
+                <option value="100">100</option>
+                <option value="200" selected>200</option>
+                <option value="400">400</option>
+              </select>
+            </label>
             <label>Interconnection
               <select id="interconnection">
                 <option value="backfeed_breaker">Backfeed breaker</option>
@@ -103,16 +209,88 @@
                 <option value="full_dual_disco">Full dual-disco backup</option>
               </select>
             </label>
-            <label>Backfeed breaker A (optional) <input type="number" id="backfeed_breaker_a" placeholder="auto" /></label>
-            <label>AC disco A (optional) <input type="number" id="ac_disco_a" value="200" /></label>
+            <label>Backfeed breaker A (optional)
+              <select id="backfeed_breaker_a">
+                <option value="">Auto / N/A</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+                <option value="50">50</option>
+                <option value="60">60</option>
+                <option value="70">70</option>
+                <option value="80">80</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+            <label>AC disco A (optional)
+              <select id="ac_disco_a">
+                <option value="">N/A</option>
+                <option value="30">30</option>
+                <option value="60">60</option>
+                <option value="100">100</option>
+                <option value="200" selected>200</option>
+              </select>
+            </label>
             <label class="check"><input type="checkbox" id="production_meter" /> Production meter required</label>
           </div>
           <h3>Design criteria</h3>
           <div class="grid2">
-            <label>Roof frame <input id="roof_frame" value='2"x6" rafters @ 24" O.C.' /></label>
-            <label>Wind mph <input type="number" id="wind_speed_mph" value="131" /></label>
-            <label>Wind exposure <input id="wind_exposure" value="B" /></label>
-            <label>Record low °C <input type="number" id="record_low_c" value="-5" step="0.1" /></label>
+            <label>Roof frame
+              <select id="roof_frame">
+                <option value='2"x4" rafters @ 24" O.C.'>2×4 @ 24" O.C.</option>
+                <option value='2"x6" rafters @ 24" O.C.' selected>2×6 @ 24" O.C.</option>
+                <option value='2"x6" rafters @ 16" O.C.'>2×6 @ 16" O.C.</option>
+                <option value='2"x8" rafters @ 24" O.C.'>2×8 @ 24" O.C.</option>
+                <option value='2"x8" rafters @ 16" O.C.'>2×8 @ 16" O.C.</option>
+                <option value='2"x10" rafters @ 24" O.C.'>2×10 @ 24" O.C.</option>
+                <option value='2"x12" rafters @ 24" O.C.'>2×12 @ 24" O.C.</option>
+                <option value="Truss roof — verify engineering">Truss roof — verify engineering</option>
+              </select>
+            </label>
+            <label>Wind mph
+              <select id="wind_speed_mph">
+                <option value="115">115</option>
+                <option value="120">120</option>
+                <option value="130">130</option>
+                <option value="131" selected>131 (coastal GA)</option>
+                <option value="140">140</option>
+                <option value="150">150</option>
+                <option value="160">160</option>
+              </select>
+            </label>
+            <label>Wind exposure
+              <select id="wind_exposure">
+                <option value="B" selected>B — suburban</option>
+                <option value="C">C — open terrain</option>
+                <option value="D">D — flat unobstructed</option>
+              </select>
+            </label>
+            <label>Record low °C
+              <select id="record_low_c">
+                <option value="0">0</option>
+                <option value="-5" selected>-5 (coastal SE)</option>
+                <option value="-10">-10</option>
+                <option value="-15">-15</option>
+                <option value="-20">-20</option>
+                <option value="-25">-25</option>
+              </select>
+            </label>
+            <label>Roof type
+              <select id="roof_type">
+                <option value="comp_shingle" selected>Composition shingle</option>
+                <option value="metal">Metal</option>
+                <option value="tile">Tile</option>
+                <option value="flat">Flat / low-slope</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>Stories
+              <select id="stories">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </label>
           </div>
         </section>
 
@@ -184,32 +362,151 @@
           <p class="hint"><strong>This is what makes structural superior:</strong> enter real plane dimensions (eave width × ridge depth in plan feet). Modules pack inside fire setbacks automatically.</p>
           <h3>Roof plane #1</h3>
           <div class="grid2">
-            <label>Name <input id="p1_name" value="ROOF #1 (SOUTH)" /></label>
-            <label>Modules on plane <input type="number" id="p1_mods" value="12" /></label>
-            <label>Eave width (ft) <input type="number" id="p1_eave" value="36" step="0.1" /></label>
-            <label>Ridge depth plan (ft) <input type="number" id="p1_depth" value="18" step="0.1" /></label>
-            <label>Tilt ° <input type="number" id="p1_tilt" value="22" /></label>
-            <label>Azimuth ° <input type="number" id="p1_az" value="180" /></label>
-            <label>Ridge setback " <input type="number" id="p1_sb_ridge" value="36" /></label>
-            <label>Eave setback " <input type="number" id="p1_sb_eave" value="18" /></label>
-            <label>Left rake " <input type="number" id="p1_sb_l" value="18" /></label>
-            <label>Right rake " <input type="number" id="p1_sb_r" value="18" /></label>
-            <label>Rafter spacing " <input type="number" id="p1_rafter" value="24" /></label>
+            <label>Name
+              <select id="p1_name">
+                <option value="ROOF #1 (SOUTH)" selected>ROOF #1 (SOUTH)</option>
+                <option value="ROOF #1 (SOUTHWEST)">ROOF #1 (SOUTHWEST)</option>
+                <option value="ROOF #1 (SOUTHEAST)">ROOF #1 (SOUTHEAST)</option>
+                <option value="ROOF #1 (WEST)">ROOF #1 (WEST)</option>
+                <option value="ROOF #1 (EAST)">ROOF #1 (EAST)</option>
+                <option value="ROOF #1 (NORTH)">ROOF #1 (NORTH)</option>
+                <option value="GARAGE">GARAGE</option>
+                <option value="MAIN HOUSE">MAIN HOUSE</option>
+              </select>
+            </label>
+            <label>Modules on plane <input type="number" id="p1_mods" value="12" min="0" /></label>
+            <label>Eave width (ft) <input type="number" id="p1_eave" value="36" step="0.1" list="eave-list" /></label>
+            <label>Ridge depth plan (ft) <input type="number" id="p1_depth" value="18" step="0.1" list="depth-list" /></label>
+            <label>Tilt °
+              <select id="p1_tilt">
+                <option value="10">10°</option>
+                <option value="15">15°</option>
+                <option value="18">18°</option>
+                <option value="20">20°</option>
+                <option value="22" selected>22°</option>
+                <option value="25">25°</option>
+                <option value="30">30°</option>
+                <option value="35">35°</option>
+                <option value="40">40°</option>
+              </select>
+            </label>
+            <label>Azimuth °
+              <select id="p1_az">
+                <option value="90">90° East</option>
+                <option value="135">135° SE</option>
+                <option value="180" selected>180° South</option>
+                <option value="225">225° SW</option>
+                <option value="270">270° West</option>
+                <option value="0">0° North</option>
+              </select>
+            </label>
+            <label>Ridge setback "
+              <select id="p1_sb_ridge">
+                <option value="18">18"</option>
+                <option value="36" selected>36"</option>
+                <option value="48">48"</option>
+              </select>
+            </label>
+            <label>Eave setback "
+              <select id="p1_sb_eave">
+                <option value="12">12"</option>
+                <option value="18" selected>18"</option>
+                <option value="36">36"</option>
+              </select>
+            </label>
+            <label>Left rake "
+              <select id="p1_sb_l">
+                <option value="12">12"</option>
+                <option value="18" selected>18"</option>
+                <option value="36">36"</option>
+              </select>
+            </label>
+            <label>Right rake "
+              <select id="p1_sb_r">
+                <option value="12">12"</option>
+                <option value="18" selected>18"</option>
+                <option value="36">36"</option>
+              </select>
+            </label>
+            <label>Rafter spacing "
+              <select id="p1_rafter">
+                <option value="16">16"</option>
+                <option value="24" selected>24"</option>
+              </select>
+            </label>
           </div>
+          <datalist id="eave-list"><option value="24"/><option value="28"/><option value="32"/><option value="36"/><option value="40"/><option value="44"/><option value="48"/></datalist>
+          <datalist id="depth-list"><option value="12"/><option value="14"/><option value="16"/><option value="18"/><option value="20"/><option value="22"/><option value="24"/></datalist>
           <h3>Roof plane #2 (optional — set modules to 0 to skip)</h3>
           <div class="grid2">
-            <label>Name <input id="p2_name" value="ROOF #2 (SOUTH)" /></label>
-            <label>Modules on plane <input type="number" id="p2_mods" value="12" /></label>
-            <label>Eave width (ft) <input type="number" id="p2_eave" value="36" step="0.1" /></label>
-            <label>Ridge depth plan (ft) <input type="number" id="p2_depth" value="18" step="0.1" /></label>
-            <label>Tilt ° <input type="number" id="p2_tilt" value="22" /></label>
-            <label>Azimuth ° <input type="number" id="p2_az" value="180" /></label>
+            <label>Name
+              <select id="p2_name">
+                <option value="ROOF #2 (SOUTH)" selected>ROOF #2 (SOUTH)</option>
+                <option value="ROOF #2 (SOUTHWEST)">ROOF #2 (SOUTHWEST)</option>
+                <option value="ROOF #2 (SOUTHEAST)">ROOF #2 (SOUTHEAST)</option>
+                <option value="ROOF #2 (WEST)">ROOF #2 (WEST)</option>
+                <option value="ROOF #2 (EAST)">ROOF #2 (EAST)</option>
+                <option value="GARAGE">GARAGE</option>
+              </select>
+            </label>
+            <label>Modules on plane <input type="number" id="p2_mods" value="12" min="0" /></label>
+            <label>Eave width (ft) <input type="number" id="p2_eave" value="36" step="0.1" list="eave-list" /></label>
+            <label>Ridge depth plan (ft) <input type="number" id="p2_depth" value="18" step="0.1" list="depth-list" /></label>
+            <label>Tilt °
+              <select id="p2_tilt">
+                <option value="10">10°</option>
+                <option value="15">15°</option>
+                <option value="18">18°</option>
+                <option value="20">20°</option>
+                <option value="22" selected>22°</option>
+                <option value="25">25°</option>
+                <option value="30">30°</option>
+              </select>
+            </label>
+            <label>Azimuth °
+              <select id="p2_az">
+                <option value="90">90° East</option>
+                <option value="135">135° SE</option>
+                <option value="180" selected>180° South</option>
+                <option value="225">225° SW</option>
+                <option value="270">270° West</option>
+              </select>
+            </label>
           </div>
           <h3>DC strings</h3>
           <div class="grid2">
-            <label>Modules in series / string <input type="number" id="str_series" value="8" /></label>
-            <label>Parallel strings (per entry) <input type="number" id="str_par" value="1" /></label>
-            <label>Number of string entries <input type="number" id="str_count" value="3" /></label>
+            <label>Modules in series / string
+              <select id="str_series">
+                <option value="1">1 (MLPE)</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8" selected>8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="14">14</option>
+                <option value="16">16</option>
+              </select>
+            </label>
+            <label>Parallel strings (per entry)
+              <select id="str_par">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </label>
+            <label>Number of string entries
+              <select id="str_count">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </label>
           </div>
           <button type="button" class="ghost" id="btn-preview-calcs">Preview electrical + structural</button>
           <pre id="calc-preview" class="calc-box">Run preview → Voc_cold, busbar, roof packer fit counts, attachment BOM…</pre>
