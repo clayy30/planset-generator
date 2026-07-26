@@ -75,8 +75,14 @@ def api_delete(project_id: str):
 
 @app.post("/api/preview-calcs")
 def api_preview_calcs(project: ProjectInput):
+    from .layout import compute_structural, structural_to_dict
+
     totals = compute_system(project)
-    return totals_to_dict(totals)
+    structural = compute_structural(project)
+    return {
+        "electrical": totals_to_dict(totals),
+        "structural": structural_to_dict(structural),
+    }
 
 
 @app.post("/api/projects/{project_id}/generate")

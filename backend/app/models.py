@@ -93,7 +93,49 @@ class ModuleSpec(BaseModel):
     length_in: float = 89.7
     width_in: float = 44.6
     depth_in: float = 1.4
+    weight_lb: float | None = None  # if omitted, layout engine estimates ~2.8 psf
     bifacial: bool = False
+
+
+class RoofPlane(BaseModel):
+    """One roof plane with plan dimensions — required for a real layout sheet.
+
+    eave_width_ft: length along the eave (left-right on plan)
+    ridge_depth_ft: horizontal plan distance from eave to ridge (not slope length)
+    """
+
+    name: str = "ROOF #1"
+    eave_width_ft: float = Field(gt=0, description="Plan width along eave")
+    ridge_depth_ft: float = Field(gt=0, description="Plan depth eave → ridge")
+    tilt_deg: float = 22.0
+    azimuth_deg: float = 180.0
+    module_count: int = Field(ge=0, default=0)
+    rafter_size: str = '2"x6"'
+    rafter_spacing_in: float = 24.0
+    setback_ridge_in: float = 36.0
+    setback_eave_in: float = 18.0
+    setback_left_in: float = 18.0
+    setback_right_in: float = 18.0
+    portrait: bool = True  # short side along eave
+    notes: str = ""
+
+    @property
+    def plan_area_sf(self) -> float:
+        return self.eave_width_ft * self.ridge_depth_ft
+
+
+class StructuralSystem(BaseModel):
+    racking_mfr: str = "IronRidge"
+    rail_model: str = "XR-100"
+    rail_length_ft: float = 14.0
+    attachment_hardware: str = "FlashFoot 2"
+    lag_size: str = '5/16" x 4.75" SS'
+    lag_embedment_in: float = 2.5
+    max_attachment_spacing_in: float = 48.0
+    max_dead_load_psf: float = 5.0  # array unit load check vs mfr/PE
+    span_table_ref: str = "Manufacturer engineered span tables for site wind/exposure"
+    pe_letter_required: bool = False
+    pe_letter_note: str = ""
 
 
 class InverterSpec(BaseModel):
@@ -169,6 +211,15 @@ class CriticalLoad(BaseModel):
 
 
 class ArrayLayout(BaseModel):
+    """Array + structural. Prefer `planes` for real roof plans.
+
+    Legacy fields (roof_planes, modules_per_plane, …) still work — layout
+    engine synthesizes default geometry if `planes` is empty.
+    """
+
+    planes: list[RoofPlane] = Field(default_factory=list)
+    structural: StructuralSystem = Field(default_factory=StructuralSystem)
+    # legacy / summary fields
     roof_planes: int = 1
     modules_per_plane: list[int] = Field(default_factory=lambda: [12])
     azimuth_deg: list[float] = Field(default_factory=lambda: [180.0])

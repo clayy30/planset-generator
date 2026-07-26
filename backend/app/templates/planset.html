@@ -456,89 +456,173 @@
   </div>
 </section>
 
-{# ===================== PV-2 ARRAY ===================== #}
+{# ===================== PV-2 ROOF PLAN WITH MODULES ===================== #}
 <section class="sheet" id="PV-2">
   <div class="banner">
     <div>
-      <h1>ARRAY LAYOUT &amp; ATTACHMENT BASIS</h1>
-      <div class="sub">Racking: {{ array.racking }} · Attachment: {{ array.attachment }}</div>
+      <h1>ROOF PLAN WITH MODULES</h1>
+      <div class="sub">
+        Geometry-driven layout · fire setbacks enforced ·
+        {{ st.planes|length }} plane(s) · {{ structural.planes|sum(attribute='fit_count') }} modules placed ·
+        coverage {{ '%.1f'|format(st.coverage_pct) }}% of roof plan area
+      </div>
     </div>
-    <div class="kw">PV-2<span>Array / fire setbacks</span></div>
+    <div class="kw">PV-2<span>Roof plan / modules</span></div>
   </div>
   <div class="body">
     <div class="main">
+      <div class="three">
+        <div class="stat"><div class="big-num">{{ structural.planes|sum(attribute='fit_count') }}</div><div class="l">Modules placed</div></div>
+        <div class="stat"><div class="big-num">{{ '%.0f'|format(st.total_array_sf) }} sf</div><div class="l">Array area</div></div>
+        <div class="stat"><div class="big-num">{{ '%.1f'|format(st.coverage_pct) }}%</div><div class="l">Roof covered</div></div>
+      </div>
+
+      <div class="sld-wrap" style="flex:1;min-height:0">
+        {{ svg_roof }}
+      </div>
+
       <div class="two">
         <div class="panel">
-          <h2>Array geometry</h2>
+          <h2>Module type, dimensions &amp; weight</h2>
+          {% set m0 = modules[0] %}
           <table class="data">
-            <tr><th>Plane</th><th>Modules</th><th>Azimuth</th><th>Tilt</th></tr>
-            {% for n in range(array.roof_planes) %}
-            <tr>
-              <td>Roof #{{ n+1 }}</td>
-              <td>{{ array.modules_per_plane[n] if n < array.modules_per_plane|length else '—' }}</td>
-              <td>{{ array.azimuth_deg[n] if n < array.azimuth_deg|length else '—' }}°</td>
-              <td>{{ array.tilt_deg[n] if n < array.tilt_deg|length else '—' }}°</td>
-            </tr>
-            {% endfor %}
+            <tr><td>Number of modules</td><td>{{ m0.quantity }} (declared) / {{ structural.planes|sum(attribute='fit_count') }} (placed)</td></tr>
+            <tr><td>Module type</td><td>{{ m0.manufacturer }} {{ m0.model }} ({{ m0.pmax_w }}W)</td></tr>
+            <tr><td>Module weight</td><td>{{ '%.1f'|format(st.module_weight_lb) }} lb ea.</td></tr>
+            <tr><td>Module dimensions</td><td>{{ m0.length_in }}" × {{ m0.width_in }}" = {{ '%.2f'|format(m0.length_in * m0.width_in / 144) }} sf</td></tr>
+            <tr><td>Unit weight of array</td><td>{{ '%.2f'|format(st.array_dead_load_psf) }} psf (mod + racking allowance)</td></tr>
           </table>
-          <p class="tiny" style="margin-top:4px">Module footprint (typ first SKU):
-            {% if modules %}{{ modules[0].length_in }}" × {{ modules[0].width_in }}" × {{ modules[0].depth_in }}"{% endif %}
-          </p>
         </div>
         <div class="panel">
-          <h2>Fire setbacks (design basis)</h2>
-          <ul>
-            <li>Ridge: {{ criteria.fire_setback_ridge_in }}" clear pathway TYP (IFC / AHJ)</li>
-            <li>Eave / hip / valley: {{ criteria.fire_setback_hip_valley_in }}" TYP</li>
-            <li>Pathways: maintain 36" fire access routes as required by AHJ</li>
-            <li>Field: verify actual roof plan; adjust module count if setbacks conflict</li>
-          </ul>
-          <h2 style="margin-top:8px">Attachment basis</h2>
-          <ul>
-            <li>{{ array.attachment }}</li>
-            <li>Span / spacing per racking PE letter or manufacturer span tables for {{ criteria.wind_speed_mph }} mph Exp {{ criteria.wind_exposure }}</li>
-            <li>Flash all penetrations; do not overdrive lags</li>
-            <li>Bond rails / modules per listing (WEEB / integrated grounding)</li>
-          </ul>
-        </div>
-      </div>
-      <div class="panel">
-        <h2>Schematic array block (not a surveyed roof plan)</h2>
-        <div class="sld-wrap">
-          <svg class="sld" viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg">
-            <rect x="20" y="20" width="860" height="160" fill="none" stroke="#111" stroke-width="2"/>
-            <text x="30" y="40" font-size="12" font-weight="700">ROOF PLANE (SCHEMATIC)</text>
-            <text x="30" y="56" font-size="10" fill="#444">Install modules within fire setbacks · actual layout by field measure</text>
-            {% set cols = 8 %}
-            {% set total_m = totals.module_count %}
-            {% for i in range([total_m, 24]|min) %}
-              {% set c = i % cols %}
-              {% set r = (i // cols) %}
-              <rect x="{{ 40 + c*100 }}" y="{{ 70 + r*40 }}" width="90" height="32" fill="#1a5fb4" stroke="#0b3d91" stroke-width="1"/>
-              <text x="{{ 85 + c*100 }}" y="{{ 90 + r*40 }}" text-anchor="middle" fill="#fff" font-size="10">M{{ i+1 }}</text>
+          <h2>Array area &amp; roof area calcs</h2>
+          <table class="data">
+            <tr><th>Roof</th><th># Mod</th><th>Array sf</th><th>Roof sf</th><th>Cover %</th><th>Tilt</th><th>Az</th><th>Rafters</th></tr>
+            {% for p in structural.planes %}
+            <tr>
+              <td>{{ p.plane.name }}</td>
+              <td>{{ p.fit_count }}{% if p.shortfall %}/{{ p.requested }}{% endif %}</td>
+              <td>{{ '%.1f'|format(p.array_area_sf) }}</td>
+              <td>{{ '%.1f'|format(p.roof_area_sf) }}</td>
+              <td>{{ '%.1f'|format(p.coverage_pct) }}</td>
+              <td>{{ p.plane.tilt_deg }}°</td>
+              <td>{{ p.plane.azimuth_deg }}°</td>
+              <td>{{ p.plane.rafter_size }} @ {{ p.plane.rafter_spacing_in|int }}" OC</td>
+            </tr>
             {% endfor %}
-            <text x="30" y="195" font-size="10" fill="#444">Showing up to 24 module placeholders ({{ totals.module_count }} total). Ridge pathway reserved top of sheet in field.</text>
-          </svg>
+            <tr>
+              <th>TOTAL</th>
+              <th>{{ structural.planes|sum(attribute='fit_count') }}</th>
+              <th>{{ '%.1f'|format(st.total_array_sf) }}</th>
+              <th>{{ '%.1f'|format(st.total_roof_sf) }}</th>
+              <th>{{ '%.1f'|format(st.coverage_pct) }}</th>
+              <th colspan="3"></th>
+            </tr>
+          </table>
         </div>
       </div>
-      <div class="panel tiny">
-        <strong>Note vs permit-mill sets:</strong> This sheet does not fake a photoreal roof CAD takeoff without a site survey.
-        It locks design criteria, setbacks, racking basis, and module count so the EC/roofer can field-verify — with PE stamp pathway when structural letter is required by AHJ.
+
+      {% if structural.warnings %}
+      <div class="warn"><strong>Layout / structural flags:</strong>
+        <ul>{% for w in structural.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+    </div>
+    <aside class="side">
+      <div class="tb-head">TITLE BLOCK</div>
+      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">ROOF PLAN WITH MODULES</div></div>
+      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-2</div></div>
+      <div class="tb-row"><div class="lbl">Wind</div><div class="val">{{ criteria.wind_speed_mph }} mph · Exp {{ criteria.wind_exposure }}</div></div>
+      <div class="tb-row"><div class="lbl">Setbacks</div><div class="val tiny">Ridge / eave / rake enforced in packer</div></div>
+      <div class="tb-row"><div class="lbl">Note</div><div class="val tiny">Actual roof conditions may vary — verify on site before install</div></div>
+      <div class="tb-row">
+        <div class="lbl">Legend</div>
+        <div class="val tiny">
+          Blue = module · Pink band = fire/setback zone · Dims in feet
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="footer">
+    <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
+    <div><div class="lbl">Title</div><div class="val">Roof Plan with Modules</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-2</div></div>
+    <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
+    <div><div class="lbl">Scale</div><div class="val">NTS (geom. driven)</div></div>
+  </div>
+</section>
+
+{# ===================== PV-2A ATTACHMENT / STRUCTURAL ===================== #}
+<section class="sheet" id="PV-2A">
+  <div class="banner">
+    <div>
+      <h1>ATTACHMENT DETAIL &amp; STRUCTURAL SUMMARY</h1>
+      <div class="sub">
+        {{ array.structural.racking_mfr }} {{ array.structural.rail_model }} ·
+        {{ array.structural.attachment_hardware }} ·
+        {{ array.structural.lag_size }} · min {{ array.structural.lag_embedment_in }}" embed ·
+        Wind {{ criteria.wind_speed_mph }} mph Exp {{ criteria.wind_exposure }}
+      </div>
+    </div>
+    <div class="kw">PV-2A<span>Attachment / structural</span></div>
+  </div>
+  <div class="body">
+    <div class="main">
+      <div class="sld-wrap">
+        {{ svg_attachment }}
+      </div>
+
+      <div class="two">
+        <div class="panel">
+          <h2>Racking bill of materials (engineered count)</h2>
+          <table class="data">
+            <tr><th>Equipment</th><th>Qty</th><th>Description</th></tr>
+            <tr><td>RAIL</td><td>{{ st.bom.rails }}</td><td>{{ array.structural.rail_model }} (~{{ array.structural.rail_length_ft }}' sticks; field cut/splice)</td></tr>
+            <tr><td>SPLICE</td><td>{{ st.bom.splices }}</td><td>Bonded rail splice as required by row length</td></tr>
+            <tr><td>MID CLAMP</td><td>{{ st.bom.mid_clamps }}</td><td>Listed mid clamp</td></tr>
+            <tr><td>END CLAMP</td><td>{{ st.bom.end_clamps }}</td><td>Listed end clamp / stopper</td></tr>
+            <tr><td>ATTACHMENT</td><td>{{ st.bom.attachments }}</td><td>{{ array.structural.attachment_hardware }} @ {{ st.bom.attachment_spacing_in|int }}" OC (rafter)</td></tr>
+            <tr><td>GROUNDING LUG</td><td>{{ st.bom.grounding_lugs }}</td><td>Listed rail lug to EGC</td></tr>
+          </table>
+          <ul class="tiny" style="margin-top:4px">
+            {% for n in st.bom.notes %}<li>{{ n }}</li>{% endfor %}
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>Structural design basis</h2>
+          <table class="data">
+            <tr><td>Roof type / frame</td><td>{{ criteria.roof_type.value.replace('_',' ') }} · {{ criteria.roof_frame }}</td></tr>
+            <tr><td>Wind / exposure / risk</td><td>{{ criteria.wind_speed_mph }} mph · {{ criteria.wind_exposure }} · Cat {{ criteria.risk_category }}</td></tr>
+            <tr><td>Snow</td><td>{{ criteria.snow_load_psf }} psf</td></tr>
+            <tr><td>Array dead load</td><td>
+              <span class="badge {{ 'green' if st.dead_load_ok else 'red' }}">{{ '%.2f'|format(st.array_dead_load_psf) }} psf</span>
+              max design {{ array.structural.max_dead_load_psf }} psf
+            </td></tr>
+            <tr><td>Lag / embedment</td><td>{{ array.structural.lag_size }} · min {{ array.structural.lag_embedment_in }}" thread into solid wood</td></tr>
+            <tr><td>Max att. spacing</td><td>{{ array.structural.max_attachment_spacing_in }}" (mfr) · used {{ st.bom.attachment_spacing_in|int }}" (rafter OC)</td></tr>
+            <tr><td>Span table ref</td><td>{{ array.structural.span_table_ref }}</td></tr>
+            <tr><td>PE letter</td><td>{% if array.structural.pe_letter_required %}REQUIRED — {{ array.structural.pe_letter_note }}{% else %}Per AHJ — attach if required for wind/exposure or non-standard framing{% endif %}</td></tr>
+          </table>
+          <p class="tiny" style="margin-top:6px">
+            <strong>Why this beats mill attachment sheets:</strong> counts are derived from the actual placed module grid and rafter spacing,
+            not a static clipboard BOM. Dead load is calculated. Setbacks are enforced in the packer (PV-2). Field PE still governs when AHJ requires stamp.
+          </p>
+        </div>
       </div>
     </div>
     <aside class="side">
       <div class="tb-head">TITLE BLOCK</div>
       <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">ARRAY &amp; ATTACHMENT</div></div>
-      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-2</div></div>
-      <div class="tb-row"><div class="lbl">Wind</div><div class="val">{{ criteria.wind_speed_mph }} mph · {{ criteria.wind_exposure }}</div></div>
-      <div class="tb-row"><div class="lbl">Racking</div><div class="val">{{ array.racking }}</div></div>
+      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">ATTACHMENT / STRUCTURAL</div></div>
+      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-2A</div></div>
+      <div class="tb-row"><div class="lbl">Racking</div><div class="val">{{ array.structural.racking_mfr }} {{ array.structural.rail_model }}</div></div>
+      <div class="tb-row"><div class="lbl">Attachments</div><div class="val">{{ st.bom.attachments }} {{ array.structural.attachment_hardware }}</div></div>
     </aside>
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-    <div><div class="lbl">Title</div><div class="val">Array Layout &amp; Attachment Basis</div></div>
-    <div><div class="lbl">Drawing</div><div class="val">PV-2</div></div>
+    <div><div class="lbl">Title</div><div class="val">Attachment Detail &amp; Structural Summary</div></div>
+    <div><div class="lbl">Drawing</div><div class="val">PV-2A</div></div>
     <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
     <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
   </div>
@@ -995,8 +1079,11 @@
           'RSD initiator shown when PV present (690.12)',
           'ESS disconnect / labels if batteries present (706)',
           'Wire schedule present; EC confirms final ampacity',
-          'Wind / exposure / attachment basis stated (PV-2)',
-          'Fire setbacks acknowledged; field roof plan to verify',
+          'Roof plane geometry entered; modules placed on PV-2 with setbacks',
+          'Placed module count matches BOM / cover (or flag explained)',
+          'Attachment BOM derived from layout (PV-2A) not clipboard guess',
+          'Array dead load psf checked vs design max',
+          'Wind / exposure / rafter OC stated; PE letter attached if AHJ requires',
           'Governing code editions match AHJ adoption',
           'No handwritten labels; placard set ordered',
           'Equipment cut sheets attached or linked (submittal package)',

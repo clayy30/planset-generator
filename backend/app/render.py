@@ -7,8 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from markupsafe import Markup
 
 from .calcs import compute_system, totals_to_dict
+from .layout import compute_structural, structural_to_dict
 from .models import ProjectInput
 
 TEMPLATES = Path(__file__).parent / "templates"
@@ -23,6 +25,7 @@ def _env() -> Environment:
 
 def build_context(project: ProjectInput) -> dict[str, Any]:
     totals = compute_system(project)
+    structural = compute_structural(project)
     meta = project.meta
     addr = meta.address
     full_address = ", ".join(
@@ -85,7 +88,8 @@ def build_context(project: ProjectInput) -> dict[str, Any]:
     sheets = [
         {"id": "PV-0", "name": "Cover Sheet"},
         {"id": "PV-1", "name": "Site & Project Data"},
-        {"id": "PV-2", "name": "Array & Attachment"},
+        {"id": "PV-2", "name": "Roof Plan with Modules"},
+        {"id": "PV-2A", "name": "Attachment / Structural"},
         {"id": "PV-3", "name": "Single-Line Diagram"},
         {"id": "PV-4", "name": "Electrical Calculations"},
         {"id": "PV-5", "name": "Wire Schedule & BOM"},
@@ -108,6 +112,8 @@ def build_context(project: ProjectInput) -> dict[str, Any]:
         "critical_loads": project.critical_loads,
         "totals": totals,
         "t": totals_to_dict(totals),
+        "structural": structural,
+        "st": structural_to_dict(structural),
         "modules_summary": modules_summary,
         "inv_summary": inv_summary,
         "bat_summary": bat_summary,
@@ -124,4 +130,8 @@ def build_context(project: ProjectInput) -> dict[str, Any]:
 def render_planset_html(project: ProjectInput) -> str:
     env = _env()
     tmpl = env.get_template("planset.html")
-    return tmpl.render(**build_context(project))
+    ctx = build_context(project)
+    # SVG must not be HTML-escaped
+    ctx["svg_roof"] = Markup(ctx["structural"].svg_roof)
+    ctx["svg_attachment"] = Markup(ctx["structural"].svg_attachment)
+    return tmpl.render(**ctx)

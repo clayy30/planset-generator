@@ -32,6 +32,42 @@ function buildProject() {
   const backfeed = num("backfeed_breaker_a");
   const bus = num("busbar_a");
 
+  const planes = [
+    {
+      name: val("p1_name") || "ROOF #1",
+      eave_width_ft: num("p1_eave") || 32,
+      ridge_depth_ft: num("p1_depth") || 16,
+      tilt_deg: num("p1_tilt") || 22,
+      azimuth_deg: num("p1_az") || 180,
+      module_count: num("p1_mods") || 0,
+      rafter_size: '2"x6"',
+      rafter_spacing_in: num("p1_rafter") || 24,
+      setback_ridge_in: num("p1_sb_ridge") || 36,
+      setback_eave_in: num("p1_sb_eave") || 18,
+      setback_left_in: num("p1_sb_l") || 18,
+      setback_right_in: num("p1_sb_r") || 18,
+      portrait: true,
+    },
+  ];
+  const p2mods = num("p2_mods") || 0;
+  if (p2mods > 0) {
+    planes.push({
+      name: val("p2_name") || "ROOF #2",
+      eave_width_ft: num("p2_eave") || 32,
+      ridge_depth_ft: num("p2_depth") || 16,
+      tilt_deg: num("p2_tilt") || 22,
+      azimuth_deg: num("p2_az") || 180,
+      module_count: p2mods,
+      rafter_size: '2"x6"',
+      rafter_spacing_in: num("p1_rafter") || 24,
+      setback_ridge_in: num("p1_sb_ridge") || 36,
+      setback_eave_in: num("p1_sb_eave") || 18,
+      setback_left_in: 18,
+      setback_right_in: 18,
+      portrait: true,
+    });
+  }
+
   return {
     custom_title: "PHOTOVOLTAIC / ENERGY STORAGE SYSTEM",
     meta: {
@@ -57,6 +93,8 @@ function buildProject() {
       wind_speed_mph: num("wind_speed_mph") || 130,
       wind_exposure: val("wind_exposure") || "B",
       attic_run_required: true,
+      fire_setback_ridge_in: num("p1_sb_ridge") || 36,
+      fire_setback_eave_in: num("p1_sb_eave") || 18,
     },
     ambient: {
       record_low_c: num("record_low_c") ?? -5,
@@ -73,6 +111,9 @@ function buildProject() {
         voc: num("mod_voc") || 48,
         isc: num("mod_isc") || 11,
         voc_temp_coeff_pct_per_c: num("mod_coeff") ?? -0.28,
+        length_in: 82.4,
+        width_in: 44.6,
+        weight_lb: 48.5,
       },
     ],
     inverters: [
@@ -118,12 +159,23 @@ function buildProject() {
     },
     strings,
     array: {
-      roof_planes: 1,
-      modules_per_plane: [num("mod_qty") || 1],
-      azimuth_deg: [180],
-      tilt_deg: [22],
-      racking: "IronRidge XR / FlashFoot 2 or AHJ-approved equal",
+      planes,
+      roof_planes: planes.length,
+      modules_per_plane: planes.map((p) => p.module_count),
+      azimuth_deg: planes.map((p) => p.azimuth_deg),
+      tilt_deg: planes.map((p) => p.tilt_deg),
+      racking: "IronRidge XR-100 / FlashFoot 2 or AHJ-approved equal",
       attachment: '5/16" x 4.75" SS lag, min 2-1/2" embedment into rafter',
+      structural: {
+        racking_mfr: "IronRidge",
+        rail_model: "XR-100",
+        attachment_hardware: "FlashFoot 2",
+        lag_size: '5/16" x 4.75" SS',
+        lag_embedment_in: 2.5,
+        max_attachment_spacing_in: 48,
+        max_dead_load_psf: 5.0,
+        span_table_ref: "Manufacturer span tables for site wind/exposure",
+      },
     },
   };
 }
@@ -196,6 +248,31 @@ function applyPreset(data) {
     $("str_series").value = p.strings[0].modules_in_series;
     $("str_par").value = p.strings[0].parallel_strings;
     $("str_count").value = p.strings.length;
+  }
+  if (p.array && p.array.planes && p.array.planes.length) {
+    const a = p.array.planes[0];
+    $("p1_name").value = a.name || "ROOF #1";
+    $("p1_mods").value = a.module_count;
+    $("p1_eave").value = a.eave_width_ft;
+    $("p1_depth").value = a.ridge_depth_ft;
+    $("p1_tilt").value = a.tilt_deg;
+    $("p1_az").value = a.azimuth_deg;
+    $("p1_sb_ridge").value = a.setback_ridge_in ?? 36;
+    $("p1_sb_eave").value = a.setback_eave_in ?? 18;
+    $("p1_sb_l").value = a.setback_left_in ?? 18;
+    $("p1_sb_r").value = a.setback_right_in ?? 18;
+    $("p1_rafter").value = a.rafter_spacing_in ?? 24;
+    if (p.array.planes[1]) {
+      const b = p.array.planes[1];
+      $("p2_name").value = b.name || "ROOF #2";
+      $("p2_mods").value = b.module_count;
+      $("p2_eave").value = b.eave_width_ft;
+      $("p2_depth").value = b.ridge_depth_ft;
+      $("p2_tilt").value = b.tilt_deg;
+      $("p2_az").value = b.azimuth_deg;
+    } else {
+      $("p2_mods").value = 0;
+    }
   }
   updateSnapshot();
 }
