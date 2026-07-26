@@ -1,0 +1,273 @@
+{
+  "meta": {
+    "project_name": "DPC Max Hybrid 15 — 400A Dual Disco",
+    "customer_name": "Sample Customer",
+    "address": {
+      "line1": "123 Example Rd",
+      "line2": "",
+      "city": "Guyton",
+      "state": "GA",
+      "zip": "31312",
+      "apn": "TBD",
+      "latitude": 32.34,
+      "longitude": -81.39,
+      "county": "",
+      "owner_of_record": "",
+      "acres": null,
+      "legal_description": "",
+      "property_use": "",
+      "year_built": "",
+      "zip4": "",
+      "structure_type": "",
+      "gis_source": ""
+    },
+    "utility": "Georgia Power / EMC as applicable",
+    "ahj": "Effingham County",
+    "designer": "Savannah Solar Power — Planset Generator",
+    "company": "Savannah Solar Power",
+    "company_address": "Savannah, GA",
+    "prepared_date": "",
+    "revision": "0",
+    "revision_note": "INITIAL RELEASE",
+    "governing_codes": [
+      "2018 International Building Code (IBC)",
+      "2018 International Residential Code (IRC)",
+      "2018 International Fire Code (IFC)",
+      "2020 / 2023 National Electrical Code (NEC) as adopted by AHJ"
+    ]
+  },
+  "criteria": {
+    "roof_type": "comp_shingle",
+    "roof_layers": 1,
+    "roof_frame": "2\"x6\" rafters @ 24\" O.C.",
+    "stories": 1,
+    "snow_load_psf": 0.0,
+    "wind_speed_mph": 131.0,
+    "wind_exposure": "B",
+    "risk_category": "II",
+    "attic_run_required": true,
+    "fire_setback_ridge_in": 36.0,
+    "fire_setback_eave_in": 18.0,
+    "fire_setback_hip_valley_in": 18.0
+  },
+  "ambient": {
+    "record_low_c": -5.0,
+    "high_2pct_c": 35.0,
+    "roof_adder_c": 30.0
+  },
+  "modules": [
+    {
+      "manufacturer": "Canadian Solar",
+      "model": "CS6.1-54TM-H-450",
+      "quantity": 24,
+      "pmax_w": 450.0,
+      "vmp": 41.5,
+      "imp": 10.85,
+      "voc": 49.5,
+      "isc": 11.5,
+      "voc_temp_coeff_pct_per_c": -0.27,
+      "length_in": 82.4,
+      "width_in": 44.6,
+      "depth_in": 1.4,
+      "weight_lb": 48.5,
+      "bifacial": false
+    }
+  ],
+  "inverters": [
+    {
+      "manufacturer": "Duracell Power Center",
+      "model": "Max Hybrid 15",
+      "quantity": 1,
+      "continuous_ac_w": 15000.0,
+      "continuous_ac_a": 62.5,
+      "max_ac_a": 62.5,
+      "nominal_vac": 240.0,
+      "max_pv_w": 19500.0,
+      "max_voc": 500.0,
+      "mppt_count": 3,
+      "max_imp_per_mppt": 26.0,
+      "passthrough_a": 200.0,
+      "battery_cont_w": 12000.0,
+      "parallel_capable": true,
+      "max_parallel": 12,
+      "ne_ma": "NEMA 3R / IP65",
+      "listing": "UL 1741 / IEEE 1547a"
+    }
+  ],
+  "batteries": [
+    {
+      "manufacturer": "Duracell Power Center",
+      "model": "Stack 15-30 (30 kWh kit)",
+      "quantity": 1,
+      "usable_kwh": 30.0,
+      "nominal_v": 48.0,
+      "max_charge_a": null,
+      "max_discharge_a": null
+    }
+  ],
+  "service": {
+    "service_a": 400,
+    "phase": "1Ø 3W",
+    "voltage": "120/240V",
+    "main_breaker_a": 400,
+    "busbar_a": 400,
+    "num_disconnects": 2,
+    "disconnect_rating_a": 200,
+    "existing_main_panel": true,
+    "interconnection": "dual_disco_hybrid",
+    "backup_mode": "half_home",
+    "backfeed_breaker_a": null,
+    "ac_disco_a": 200,
+    "production_meter": false,
+    "export_limit_a": null
+  },
+  "strings": [
+    {
+      "name": "MPPT1-S1",
+      "module_model": "CS6.1-54TM-H-450",
+      "modules_in_series": 8,
+      "parallel_strings": 1,
+      "inverter_index": 0,
+      "mppt_index": 1
+    },
+    {
+      "name": "MPPT2-S1",
+      "module_model": "CS6.1-54TM-H-450",
+      "modules_in_series": 8,
+      "parallel_strings": 1,
+      "inverter_index": 0,
+      "mppt_index": 2
+    },
+    {
+      "name": "MPPT3-S1",
+      "module_model": "CS6.1-54TM-H-450",
+      "modules_in_series": 8,
+      "parallel_strings": 1,
+      "inverter_index": 0,
+      "mppt_index": 3
+    }
+  ],
+  "array": {
+    "planes": [
+      {
+        "name": "ROOF #1 (SOUTH)",
+        "eave_width_ft": 40.0,
+        "ridge_depth_ft": 22.0,
+        "tilt_deg": 22.0,
+        "azimuth_deg": 180.0,
+        "module_count": 12,
+        "rafter_size": "2\"x6\"",
+        "rafter_spacing_in": 24.0,
+        "setback_ridge_in": 36.0,
+        "setback_eave_in": 18.0,
+        "setback_left_in": 18.0,
+        "setback_right_in": 18.0,
+        "portrait": true,
+        "notes": ""
+      },
+      {
+        "name": "ROOF #2 (SOUTH)",
+        "eave_width_ft": 40.0,
+        "ridge_depth_ft": 22.0,
+        "tilt_deg": 22.0,
+        "azimuth_deg": 180.0,
+        "module_count": 12,
+        "rafter_size": "2\"x6\"",
+        "rafter_spacing_in": 24.0,
+        "setback_ridge_in": 36.0,
+        "setback_eave_in": 18.0,
+        "setback_left_in": 18.0,
+        "setback_right_in": 18.0,
+        "portrait": true,
+        "notes": ""
+      }
+    ],
+    "structural": {
+      "racking_mfr": "IronRidge",
+      "rail_model": "XR-100",
+      "rail_length_ft": 14.0,
+      "attachment_hardware": "FlashFoot 2",
+      "lag_size": "5/16\" x 4.75\" SS",
+      "lag_embedment_in": 2.5,
+      "max_attachment_spacing_in": 48.0,
+      "max_dead_load_psf": 5.0,
+      "span_table_ref": "IronRidge span tables · 131 mph Exp B · verify series",
+      "pe_letter_required": false,
+      "pe_letter_note": ""
+    },
+    "roof_planes": 2,
+    "modules_per_plane": [
+      12,
+      12
+    ],
+    "azimuth_deg": [
+      180.0,
+      180.0
+    ],
+    "tilt_deg": [
+      22.0,
+      22.0
+    ],
+    "racking": "IronRidge XR-100 / FlashFoot 2 or AHJ-approved equal",
+    "attachment": "5/16\" x 4.75\" SS lag, min 2-1/2\" embedment into rafter"
+  },
+  "wires": [
+    {
+      "name": "W1",
+      "from_equip": "Array JBs",
+      "to_equip": "Max Hybrid 15 PV MPPTs",
+      "conductors": "#10 AWG PV wire · 3 strings · outdoor UV",
+      "ocpd": "Per string if required",
+      "notes": "Voc_cold per string on PV-4"
+    },
+    {
+      "name": "W2",
+      "from_equip": "Battery stack",
+      "to_equip": "Hybrid BAT+/−",
+      "conductors": "Mfr 200A-class DC kit",
+      "ocpd": "Integrated 200A×2 bat disco",
+      "notes": ""
+    },
+    {
+      "name": "W3",
+      "from_equip": "200A Disco #1",
+      "to_equip": "Hybrid GRID",
+      "conductors": "200A feeder · 4-wire Cu/Al 75°C",
+      "ocpd": "200A disco",
+      "notes": ""
+    },
+    {
+      "name": "W4",
+      "from_equip": "Hybrid LOAD",
+      "to_equip": "Backed-up Panel #1",
+      "conductors": "200A feeder · 4-wire",
+      "ocpd": "Panel main ≤200A",
+      "notes": ""
+    }
+  ],
+  "critical_loads": [
+    {
+      "name": "Refrigerator",
+      "va": 800.0,
+      "continuous": true
+    },
+    {
+      "name": "Well / pressure",
+      "va": 1500.0,
+      "continuous": false
+    },
+    {
+      "name": "Network / ONT",
+      "va": 200.0,
+      "continuous": true
+    },
+    {
+      "name": "Selected lighting",
+      "va": 600.0,
+      "continuous": true
+    }
+  ],
+  "notes_construction": [],
+  "notes_electrical": [],
+  "custom_title": "PHOTOVOLTAIC / HYBRID ENERGY STORAGE SYSTEM"
+}
