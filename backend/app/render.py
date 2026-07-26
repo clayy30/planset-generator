@@ -177,6 +177,10 @@ def build_context(
         "service_lines": service_lines,
         "notes_construction": default_construction,
         "notes_electrical": default_electrical,
+        "calc_engine": next(
+            (n for n in totals.continuous_factor_notes if n.startswith("Calc engine")),
+            "planset calc engine",
+        ),
         "sheets": sheets,
         "custom_title": project.custom_title,
         "generated": date.today().isoformat(),

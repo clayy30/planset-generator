@@ -224,8 +224,24 @@ def build_segments(project: ProjectInput, totals: SystemTotals) -> list[Seg]:
 
 
 def generate_sld_svg(project: ProjectInput, totals: SystemTotals) -> str:
-    """Return full SVG string for PV-3 (clean layout, no overlaps)."""
+    """Return full SVG string for PV-3.
+
+    Prefer **schemdraw** (MIT) electrical symbols when available; fall back to
+    hand-laid SVG diagrams. Both share the same conductor schedule from
+    ``build_segments``.
+    """
     from .sld_diagrams import sld_backfeed_svg, sld_half_home_svg
+    from .sld_schemdraw import HAS_SCHEMDRAW, render_schemdraw_sld
+
+    if HAS_SCHEMDRAW:
+        schem = render_schemdraw_sld(project, totals)
+        if schem and len(schem) > 500:
+            # Wrap with a light title so template CSS still applies
+            return (
+                '<div class="schemdraw-sld" style="width:100%;overflow:auto;background:#fff">'
+                + schem
+                + "</div>"
+            )
 
     segs = build_segments(project, totals)
     inv = project.inverters[0] if project.inverters else None

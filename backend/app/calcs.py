@@ -27,8 +27,10 @@ def module_by_model(project: ProjectInput, model: str) -> ModuleSpec:
 
 
 def cold_voc(voc_stc: float, coeff_pct_per_c: float, t_low_c: float) -> float:
-    """Voc at record low: Voc_stc * [1 + (coeff/100)*(Tlow - 25)]."""
-    return voc_stc * (1.0 + (coeff_pct_per_c / 100.0) * (t_low_c - STC_TEMP_C))
+    """Voc at design low temp — delegates to calc_engine (pvlib-aligned linear β)."""
+    from .calc_engine import voc_temperature_correct
+
+    return voc_temperature_correct(voc_stc, coeff_pct_per_c, t_low_c).voc_design
 
 
 def hot_vmp(vmp_stc: float, coeff_pct_per_c: float, t_cell_c: float) -> float:
@@ -155,6 +157,10 @@ def compute_system(project: ProjectInput) -> SystemTotals:
         quality.append("AUTO_STRING_DESIGN")
 
     t_low = project.ambient.record_low_c
+    from .calc_engine import analyze_string, engine_banner
+
+    quality.append("PVLIB_CALC_ENGINE" if "pvlib" in engine_banner().lower() else "NATIVE_CALC_ENGINE")
+
     for s in strings:
         try:
             mod = module_by_model(project, s.module_model)
@@ -162,65 +168,40 @@ def compute_system(project: ProjectInput) -> SystemTotals:
             warnings.append(str(e))
             continue
 
-        inv = None
-        max_voc = None
-        imp_lim = None
-        if project.inverters:
-            idx = min(s.inverter_index, len(project.inverters) - 1)
-            inv = project.inverters[idx]
-            max_voc = inv.max_voc
-            imp_lim = inv.max_imp_per_mppt
-
-        voc_c = cold_voc(mod.voc, mod.voc_temp_coeff_pct_per_c, t_low)
-        str_voc_stc = mod.voc * s.modules_in_series
-        str_voc_cold = voc_c * s.modules_in_series
-        str_vmp = mod.vmp * s.modules_in_series
-        str_isc = mod.isc
-        par_isc = mod.isc * s.parallel_strings
-        par_imp = mod.imp * s.parallel_strings
-        ocpd = 1.25 * par_isc
-
-        voc_ok = True if max_voc is None else str_voc_cold <= max_voc + 1e-6
-        imp_ok = True if imp_lim is None else par_imp <= imp_lim + 1e-6
-
-        notes = []
-        notes.append(
-            f"Voc_cold = {mod.voc:.2f}V × [1 + ({mod.voc_temp_coeff_pct_per_c}/100)×({t_low}-25)] = {voc_c:.2f}V/module"
-        )
-        notes.append(
-            f"String Voc_cold = {voc_c:.2f}V × {s.modules_in_series} = {str_voc_cold:.1f}V"
-        )
-        if max_voc is not None:
-            notes.append(f"Inverter max Voc = {max_voc:.0f}V → {'PASS' if voc_ok else 'FAIL'}")
-        if not voc_ok:
-            warnings.append(f"{s.name}: cold Voc {str_voc_cold:.1f}V exceeds inverter limit {max_voc}V")
-        if not imp_ok:
-            warnings.append(f"{s.name}: Imp {par_imp:.1f}A exceeds MPPT limit {imp_lim}A")
+        r = analyze_string(project, s, mod, t_design_c=t_low)
+        if not r.voc_ok:
+            warnings.append(
+                f"{r.name}: design Voc {r.string_voc_design:.1f}V exceeds inverter limit {r.inverter_max_voc}V"
+            )
+        if not r.imp_ok:
+            warnings.append(
+                f"{r.name}: Imp {r.parallel_imp:.1f}A exceeds MPPT limit {r.inverter_mppt_imp}A"
+            )
 
         string_calcs.append(
             StringCalc(
-                name=s.name,
-                module_model=mod.model,
-                modules_in_series=s.modules_in_series,
-                parallel_strings=s.parallel_strings,
+                name=r.name,
+                module_model=r.module_model,
+                modules_in_series=r.modules_in_series,
+                parallel_strings=r.parallel_strings,
                 inverter_index=s.inverter_index,
                 mppt_index=s.mppt_index,
                 voc_stc=mod.voc,
                 isc_stc=mod.isc,
                 vmp_stc=mod.vmp,
                 imp_stc=mod.imp,
-                string_voc_stc=str_voc_stc,
-                string_voc_cold=str_voc_cold,
-                string_vmp_stc=str_vmp,
-                string_isc=str_isc,
-                parallel_isc=par_isc,
-                parallel_imp=par_imp,
-                ocpd_min_a=ocpd,
-                max_voc_limit=max_voc,
-                voc_ok=voc_ok,
-                imp_limit=imp_lim,
-                imp_ok=imp_ok,
-                notes=notes,
+                string_voc_stc=r.string_voc_stc,
+                string_voc_cold=r.string_voc_design,
+                string_vmp_stc=r.string_vmp_stc,
+                string_isc=r.string_isc,
+                parallel_isc=r.parallel_isc,
+                parallel_imp=r.parallel_imp,
+                ocpd_min_a=r.ocpd_min_a,
+                max_voc_limit=r.inverter_max_voc,
+                voc_ok=r.voc_ok,
+                imp_limit=r.inverter_mppt_imp,
+                imp_ok=r.imp_ok,
+                notes=r.notes,
             )
         )
 
@@ -259,15 +240,18 @@ def compute_system(project: ProjectInput) -> SystemTotals:
     # Quality upgrades vs permit mills
     quality.append("FORMULA_WORK_SHOWN")
     quality.append("VOC_TEMPERATURE_CORRECTED")
+    quality.append("CALC_ENGINE_BANNER")
     if project.batteries:
         quality.append("ESS_INCLUDED")
     if project.critical_loads:
         quality.append("CRITICAL_LOAD_SCHEDULE")
 
     cont_notes = [
+        engine_banner(),
         "Inverter continuous output currents use nameplate continuous ratings.",
         "OCPD for continuous loads sized at 125% where required (NEC 215.3 / 690.8 / 705 as applicable).",
-        f"Ambient design: record low {t_low}°C · high 2% {project.ambient.high_2pct_c}°C.",
+        f"Ambient design (NEC 690.7 low-temp Voc): record low {t_low}°C · high 2% {project.ambient.high_2pct_c}°C.",
+        "Voc(T) uses linear β model (relative %/°C and absolute V/°C shown on string notes).",
     ]
 
     # Sanity: cover sheet AC vs DC nonsense
