@@ -272,11 +272,6 @@ function applyPreset(data) {
     $("bat_kwh").value = b.usable_kwh;
   }
 
-  if (p.strings && p.strings.length) {
-    $("str_series").value = p.strings[0].modules_in_series;
-    $("str_par").value = p.strings[0].parallel_strings;
-    $("str_count").value = p.strings.length;
-  }
   if (p.array && p.array.planes && p.array.planes.length) {
     const a = p.array.planes[0];
     setSelectOrValue("p1_name", a.name || "ROOF #1 (SOUTH)");
