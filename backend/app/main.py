@@ -180,6 +180,78 @@ def preset_eg4():
     return eg4_gridboss_sample()
 
 
+@app.post("/api/import/lumen")
+def api_import_lumen(payload: dict):
+    """Import a Lumen Proposal Studio project → create planset project + optional generate.
+
+    Body: raw ProposalProject JSON, or { "project": ProposalProject, "generate": true }
+    """
+    from .lumen_bridge import lumen_to_project_input
+
+    generate = True
+    body = payload
+    if isinstance(payload, dict) and "project" in payload and (
+        "primaryContact" in (payload.get("project") or {})
+        or "systems" in (payload.get("project") or {})
+    ):
+        body = payload["project"]
+        generate = bool(payload.get("generate", True))
+    elif isinstance(payload, dict) and "generate" in payload and "systems" in payload:
+        generate = bool(payload.get("generate", True))
+        body = {k: v for k, v in payload.items() if k != "generate"}
+
+    try:
+        project = lumen_to_project_input(body)
+    except Exception as e:
+        raise HTTPException(400, f"Import mapping failed: {e}") from e
+
+    rec = storage.save_project(project)
+    result = {
+        "ok": True,
+        "project_id": rec.id,
+        "customer": rec.project.meta.customer_name,
+        "address": rec.project.meta.address.line1,
+        "url_open": f"/?project={rec.id}",
+        "url_api": f"/api/projects/{rec.id}",
+        "url_planset": f"/api/projects/{rec.id}/planset",
+        "warnings": [],
+    }
+
+    if generate:
+        from .equipment_lib import appendix_to_dict, build_appendix
+
+        html = render_planset_html(rec.project, project_id=rec.id, build_spec_appendix=True)
+        path = storage.write_output(rec.id, html)
+        pkg = build_appendix(rec.project, rec.id)
+        totals = compute_system(rec.project)
+        result.update(
+            {
+                "generated": True,
+                "path": str(path),
+                "url_planset": f"/api/projects/{rec.id}/planset",
+                "warnings": totals.warnings,
+                "quality_flags": totals.quality_flags,
+                "appendix": appendix_to_dict(pkg),
+            }
+        )
+    else:
+        result["generated"] = False
+
+    return result
+
+
+@app.get("/api/bridge/info")
+def api_bridge_info():
+    return {
+        "ok": True,
+        "lumen_import": "/api/import/lumen",
+        "method": "POST",
+        "accepts": "Lumen ProposalProject JSON",
+        "returns": "planset project_id + planset HTML URL",
+        "cors": "open for local studio integration",
+    }
+
+
 # Frontend static last so API routes win
 if FRONTEND.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND), html=True), name="frontend")

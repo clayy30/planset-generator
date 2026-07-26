@@ -75,6 +75,20 @@ Open **http://127.0.0.1:8787/**
 | GET | `/api/projects/{id}/planset` | HTML planset |
 | GET | `/api/presets/duracell-400a` | 400A dual-disco hybrid preset |
 | GET | `/api/presets/eg4-gridboss` | EG4-style sample |
+| POST | `/api/import/lumen` | **Import Lumen Proposal Studio project** → create + generate |
+| GET | `/api/bridge/info` | Bridge metadata for the sales app |
+
+### Lumen Proposal Studio bridge
+
+From the sales app toolbar (**Plan set**), or:
+
+```bash
+curl -s -X POST http://127.0.0.1:8787/api/import/lumen \
+  -H 'Content-Type: application/json' \
+  -d @lumen-proposal.json
+```
+
+Maps customer, address, utility, modules, inverters, batteries, panel groups → `ProjectInput`, saves, and generates the planset HTML + equipment appendix. Always verify electrical nameplates against datasheets before stamp/submit.
 
 ## Layout
 

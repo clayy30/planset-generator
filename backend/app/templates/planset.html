@@ -632,161 +632,25 @@
 <section class="sheet" id="PV-3">
   <div class="banner">
     <div>
-      <h1>SINGLE-LINE DIAGRAM</h1>
+      <h1>ELECTRICAL SINGLE-LINE DIAGRAM</h1>
       <div class="sub">
-        Interconnection: {{ service.interconnection.value.replace('_',' ') }} ·
-        Backup: {{ service.backup_mode.value.replace('_',' ') }} ·
-        {{ service.service_a }}A service
+        INSTALLATION GRADE · {{ service.interconnection.value.replace('_',' ') | upper }} ·
+        {{ service.backup_mode.value.replace('_',' ') | upper }} ·
+        {{ service.service_a }}A · wire/OCPD callouts · (E)/(N) tags
       </div>
     </div>
-    <div class="kw">PV-3<span>Electrical one-line</span></div>
+    <div class="kw">PV-3<span>One-line · field install</span></div>
   </div>
   <div class="body sheet-full">
     <div class="main">
-      <div class="sld-wrap">
-        {% set dual = service.backup_mode.value in ['half_home','full_dual_disco'] or service.num_disconnects >= 2 %}
-        {% set full_dual = service.backup_mode.value == 'full_dual_disco' %}
-        {% set critical = service.backup_mode.value == 'critical_loads' %}
-        <svg class="sld" viewBox="0 0 1100 520" xmlns="http://www.w3.org/2000/svg">
-          <!-- Utility -->
-          <circle cx="550" cy="36" r="14" fill="none" stroke="#0b3d91" stroke-width="2"/>
-          <text x="550" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="#0b3d91">~</text>
-          <text x="575" y="40" font-size="12" font-weight="700">UTILITY {{ service.voltage }}</text>
-          <line x1="550" y1="50" x2="550" y2="72" stroke="#0b3d91" stroke-width="2.5"/>
-          <rect x="470" y="72" width="160" height="36" fill="#fff" stroke="#0b3d91" stroke-width="2"/>
-          <text x="550" y="94" text-anchor="middle" font-size="11" font-weight="700">UTILITY METER</text>
-          {% if service.production_meter %}
-          <text x="640" y="88" font-size="9" fill="#444">+ PROD. METER AS REQD</text>
-          {% endif %}
-          <line x1="550" y1="108" x2="550" y2="128" stroke="#0b3d91" stroke-width="2.5"/>
-          <rect x="455" y="128" width="190" height="40" fill="#fff" stroke="#111" stroke-width="2"/>
-          <text x="550" y="146" text-anchor="middle" font-size="11" font-weight="700">{{ service.service_a }}A SERVICE EQUIPMENT</text>
-          <text x="550" y="160" text-anchor="middle" font-size="9" fill="#444">Main {{ service.main_breaker_a }}A{% if service.busbar_a %} · Bus {{ service.busbar_a }}A{% endif %}</text>
-
-          {% if dual %}
-          <line x1="550" y1="168" x2="550" y2="190" stroke="#0b3d91" stroke-width="2.5"/>
-          <line x1="220" y1="190" x2="880" y2="190" stroke="#0b3d91" stroke-width="2.5"/>
-          <line x1="220" y1="190" x2="220" y2="215" stroke="#0b3d91" stroke-width="2.5"/>
-          <line x1="880" y1="190" x2="880" y2="215" stroke="#0b3d91" stroke-width="2.5"/>
-
-          <rect x="130" y="215" width="180" height="42" fill="#fff" stroke="#0b5c2e" stroke-width="2.2"/>
-          <text x="220" y="240" text-anchor="middle" font-size="11" font-weight="700" fill="#0b5c2e">{{ service.disconnect_rating_a }}A DISCO #1</text>
-
-          <rect x="790" y="215" width="180" height="42" fill="#fff" stroke="{{ '#0b5c2e' if full_dual else '#0b3d91' }}" stroke-width="2.2"/>
-          <text x="880" y="240" text-anchor="middle" font-size="11" font-weight="700" fill="{{ '#0b5c2e' if full_dual else '#0b3d91' }}">{{ service.disconnect_rating_a }}A DISCO #2</text>
-
-          <line x1="220" y1="257" x2="220" y2="285" stroke="#0b5c2e" stroke-width="2.5"/>
-          <!-- INV A -->
-          <rect x="100" y="285" width="240" height="88" fill="#fff" stroke="#0b5c2e" stroke-width="2.5"/>
-          <text x="220" y="308" text-anchor="middle" font-size="12" font-weight="700" fill="#0b5c2e">
-            {% if inverters %}{{ inverters[0].manufacturer }} {{ inverters[0].model }}{% else %}HYBRID INVERTER{% endif %}
-          </text>
-          <text x="220" y="326" text-anchor="middle" font-size="9">UNIT A · GRID / LOAD / BAT / PV</text>
-          <text x="220" y="342" text-anchor="middle" font-size="9" fill="#444">
-            {% if inverters %}{{ inverters[0].continuous_ac_a }}A cont.{% if inverters[0].passthrough_a %} · {{ inverters[0].passthrough_a }}A pass{% endif %}{% endif %}
-          </text>
-          <text x="220" y="360" text-anchor="middle" font-size="8" fill="#666">{{ inverters[0].listing if inverters else 'UL 1741' }}</text>
-
-          {% if full_dual %}
-          <line x1="880" y1="257" x2="880" y2="285" stroke="#0b5c2e" stroke-width="2.5"/>
-          <rect x="760" y="285" width="240" height="88" fill="#fff" stroke="#0b5c2e" stroke-width="2.5"/>
-          <text x="880" y="308" text-anchor="middle" font-size="12" font-weight="700" fill="#0b5c2e">
-            {% if inverters|length > 1 %}{{ inverters[1].manufacturer }} {{ inverters[1].model }}{% elif inverters %}{{ inverters[0].model }} B{% else %}HYBRID B{% endif %}
-          </text>
-          <text x="880" y="326" text-anchor="middle" font-size="9">UNIT B · GRID / LOAD / BAT / PV</text>
-          <text x="880" y="342" text-anchor="middle" font-size="9" fill="#444">PARALLEL / COMMS PER MFR</text>
-          <line x1="340" y1="329" x2="760" y2="329" stroke="#666" stroke-width="1.5" stroke-dasharray="5 3"/>
-          {% else %}
-          <line x1="880" y1="257" x2="880" y2="320" stroke="#0b3d91" stroke-width="2.5"/>
-          <rect x="790" y="320" width="180" height="50" fill="#fff" stroke="#0b3d91" stroke-width="2"/>
-          <text x="880" y="342" text-anchor="middle" font-size="11" font-weight="700" fill="#0b3d91">PANEL #2 NON-BU</text>
-          <text x="880" y="358" text-anchor="middle" font-size="9" fill="#666">utility only</text>
-          {% endif %}
-
-          <!-- BAT / PV left -->
-          <line x1="100" y1="330" x2="50" y2="330" stroke="#8a3b00" stroke-width="2"/>
-          <line x1="50" y1="330" x2="50" y2="400" stroke="#8a3b00" stroke-width="2"/>
-          <rect x="10" y="400" width="90" height="48" fill="#fff" stroke="#8a3b00" stroke-width="1.8"/>
-          <text x="55" y="420" text-anchor="middle" font-size="10" font-weight="700" fill="#8a3b00">BATTERY</text>
-          <text x="55" y="436" text-anchor="middle" font-size="8">{{ '%.0f'|format(totals.battery_kwh) }} kWh</text>
-
-          <line x1="340" y1="330" x2="400" y2="330" stroke="#6b5200" stroke-width="2"/>
-          <rect x="400" y="308" width="100" height="44" fill="#fff" stroke="#6b5200" stroke-width="1.8"/>
-          <text x="450" y="326" text-anchor="middle" font-size="10" font-weight="700" fill="#6b5200">PV ARRAY</text>
-          <text x="450" y="342" text-anchor="middle" font-size="8">{{ '%.2f'|format(totals.dc_kw) }} kWDC</text>
-
-          <line x1="220" y1="373" x2="220" y2="420" stroke="#0b5c2e" stroke-width="2.5"/>
-          <rect x="130" y="420" width="180" height="48" fill="#0b5c2e"/>
-          <text x="220" y="442" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">
-            {% if critical %}CRITICAL SUBPANEL{% else %}BACKED-UP PANEL #1{% endif %}
-          </text>
-          <text x="220" y="458" text-anchor="middle" font-size="8" fill="#d4f0e2">LOAD OUT</text>
-
-          {% if full_dual %}
-          <line x1="880" y1="373" x2="880" y2="420" stroke="#0b5c2e" stroke-width="2.5"/>
-          <rect x="790" y="420" width="180" height="48" fill="#0b5c2e"/>
-          <text x="880" y="442" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">BACKED-UP PANEL #2</text>
-          <text x="880" y="458" text-anchor="middle" font-size="8" fill="#d4f0e2">LOAD OUT</text>
-          {% endif %}
-
-          <rect x="520" y="400" width="220" height="70" fill="#fff5f5" stroke="#8b0000" stroke-width="1.5"/>
-          <text x="630" y="422" text-anchor="middle" font-size="10" font-weight="700" fill="#8b0000">RSD / ESS INITIATOR</text>
-          <text x="630" y="440" text-anchor="middle" font-size="9" fill="#444">NEC 690.12 · outdoor access</text>
-          <text x="630" y="456" text-anchor="middle" font-size="8" fill="#666">CTs for export / prod as required</text>
-
-          {% else %}
-          <!-- Single disco / standard -->
-          <line x1="550" y1="168" x2="550" y2="200" stroke="#0b3d91" stroke-width="2.5"/>
-          {% if service.interconnection.value == 'backfeed_breaker' %}
-          <rect x="460" y="200" width="180" height="50" fill="#fff" stroke="#111" stroke-width="2"/>
-          <text x="550" y="220" text-anchor="middle" font-size="11" font-weight="700">MAIN LOAD CENTER</text>
-          <text x="550" y="238" text-anchor="middle" font-size="9" fill="#444">{{ service.main_breaker_a }}A main · bus {{ service.busbar_a or service.main_breaker_a }}A</text>
-          <line x1="550" y1="250" x2="550" y2="280" stroke="#0b5c2e" stroke-width="2.5"/>
-          <rect x="470" y="280" width="160" height="36" fill="#fff" stroke="#0b5c2e" stroke-width="2"/>
-          <text x="550" y="302" text-anchor="middle" font-size="11" font-weight="700" fill="#0b5c2e">BACKFEED {{ totals.max_backfeed_a|int if totals.max_backfeed_a else '??' }}A</text>
-          <line x1="550" y1="316" x2="550" y2="345" stroke="#0b5c2e" stroke-width="2.5"/>
-          {% else %}
-          <line x1="550" y1="168" x2="550" y2="345" stroke="#0b5c2e" stroke-width="2.5"/>
-          {% endif %}
-          <rect x="420" y="345" width="260" height="80" fill="#fff" stroke="#0b5c2e" stroke-width="2.5"/>
-          <text x="550" y="370" text-anchor="middle" font-size="12" font-weight="700" fill="#0b5c2e">
-            {% if inverters %}{{ inverters[0].manufacturer }} {{ inverters[0].model }}{% else %}INVERTER{% endif %}
-          </text>
-          <text x="550" y="390" text-anchor="middle" font-size="9">QTY {{ inverters[0].quantity if inverters else 1 }} · {{ totals.ac_a_continuous }}A cont. AC</text>
-          <text x="550" y="408" text-anchor="middle" font-size="9" fill="#444">{{ inverters[0].listing if inverters else 'UL 1741' }} · {{ inverters[0].ne_ma if inverters else '' }}</text>
-
-          <line x1="420" y1="385" x2="300" y2="385" stroke="#8a3b00" stroke-width="2"/>
-          <rect x="200" y="360" width="100" height="50" fill="#fff" stroke="#8a3b00" stroke-width="1.8"/>
-          <text x="250" y="382" text-anchor="middle" font-size="10" font-weight="700" fill="#8a3b00">BATTERY</text>
-          <text x="250" y="398" text-anchor="middle" font-size="8">{{ '%.0f'|format(totals.battery_kwh) }} kWh</text>
-
-          <line x1="680" y1="385" x2="800" y2="385" stroke="#6b5200" stroke-width="2"/>
-          <rect x="800" y="360" width="110" height="50" fill="#fff" stroke="#6b5200" stroke-width="1.8"/>
-          <text x="855" y="382" text-anchor="middle" font-size="10" font-weight="700" fill="#6b5200">PV ARRAY</text>
-          <text x="855" y="398" text-anchor="middle" font-size="8">{{ '%.2f'|format(totals.dc_kw) }} kWDC</text>
-
-          {% if critical %}
-          <line x1="550" y1="425" x2="550" y2="460" stroke="#0b5c2e" stroke-width="2.5"/>
-          <rect x="460" y="460" width="180" height="40" fill="#0b5c2e"/>
-          <text x="550" y="484" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">CRITICAL LOADS PANEL</text>
-          {% endif %}
-          {% endif %}
-
-          <text x="20" y="510" font-size="9" fill="#444">SLD NTS · L1/L2/N/G simplified as single path · GEC/EGC per NEC 250 · final conductor schedule on PV-5</text>
-        </svg>
-        <div class="legend">
-          <span><i style="background:#0b3d91"></i>Utility / non-BU AC</span>
-          <span><i style="background:#0b5c2e"></i>Backed-up / hybrid AC</span>
-          <span><i style="background:#8a3b00"></i>Battery DC</span>
-          <span><i style="background:#6b5200"></i>PV DC</span>
-          <span><i style="background:#8b0000"></i>RSD / ESS</span>
-        </div>
+      <div class="sld-wrap" style="padding:4px;background:#fff">
+        {{ svg_sld }}
       </div>
     </div>
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-    <div><div class="lbl">Title</div><div class="val">Single-Line Diagram</div></div>
+    <div><div class="lbl">Title</div><div class="val">Electrical Single-Line Diagram (Install Grade)</div></div>
     <div><div class="lbl">Drawing</div><div class="val">PV-3</div></div>
     <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
     <div><div class="lbl">Scale</div><div class="val">NTS</div></div>
@@ -990,64 +854,122 @@
   </div>
 </section>
 
-{# ===================== PV-6 LABELS ===================== #}
+{# ===================== PV-6 LABELS (ANSI COLORS) ===================== #}
 <section class="sheet" id="PV-6">
   <div class="banner">
     <div>
       <h1>WARNING LABELS &amp; PLACARDS</h1>
-      <div class="sub">Permanent labels · ANSI Z535.4 · NEC 110.21(B), 690, 705, 706</div>
+      <div class="sub">ANSI Z535.4 colors · NEC 110.21(B), 690, 705, 706 · permanent, not handwritten · install before energize</div>
     </div>
-    <div class="kw">PV-6<span>Labels</span></div>
+    <div class="kw">PV-6<span>Colored stickers</span></div>
   </div>
   <div class="body">
     <div class="main">
-      <div class="two">
-        <div class="panel" style="border-color:#c00;background:#fff5f5">
-          <h2>WARNING — dual power source</h2>
-          <p><strong>DUAL POWER SOURCE</strong><br/>Second source is photovoltaic / energy storage system.</p>
-          <p class="tiny">Location: point of interconnection, meter, disco as required by AHJ.<br/>Refs: NEC 705 / 690.59 context</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:8.5pt;">
+
+        <!-- WHITE / BLACK WARNING -->
+        <div style="border:2px solid #111;background:#fff">
+          <div style="background:#111;color:#fff;padding:4px 6px;font-weight:800;display:flex;align-items:center;gap:6px">
+            <span style="background:#fc0;color:#111;padding:1px 6px;font-weight:900">⚠ WARNING</span> ELECTRICAL SHOCK HAZARD
+          </div>
+          <div style="padding:6px">
+            <div style="font-weight:700">TERMINALS ON LINE AND LOAD SIDES MAY BE ENERGIZED IN THE OPEN POSITION</div>
+            <div class="tiny" style="margin-top:4px">LOCATION: Inverter(s), AC disconnect(s), AC combiner if any<br/>CODE: NEC 705.20 / 690.13(B)</div>
+          </div>
         </div>
-        <div class="panel" style="border-color:#c00;background:#fff5f5">
-          <h2>WARNING — multiple power sources</h2>
-          <p>Power to this building may also be supplied from PV/ESS. Disconnects located as shown on SLD.</p>
-          <p class="tiny">Location: utility service entrance / main disco.</p>
+
+        <!-- RED AC DISCONNECT -->
+        <div style="border:2px solid #8b0000;background:#c41e3a;color:#fff">
+          <div style="padding:8px;text-align:center;font-weight:900;font-size:12pt;letter-spacing:0.04em">PHOTOVOLTAIC<br/>AC DISCONNECT</div>
+          <div style="padding:0 8px 8px;font-size:8pt;text-align:center">
+            MAX AC OPERATING CURRENT: <strong>{{ '%.1f'|format(totals.ac_a_continuous) }} A</strong><br/>
+            NOMINAL AC VOLTAGE: <strong>240 VAC</strong><br/>
+            <span style="opacity:0.9">LOC: AC disco / POI · NEC 690.13(B) / 690.54</span>
+          </div>
         </div>
-        <div class="panel">
-          <h2>PV DC circuit</h2>
-          <p><strong>CAUTION: PV DC CIRCUIT</strong> — energized during daylight.</p>
-          <p class="tiny">Every 10 ft on DC raceways where required · UV-resistant label.</p>
+
+        <!-- RED PV POWER SOURCE -->
+        <div style="border:2px solid #8b0000;background:#c41e3a;color:#fff">
+          <div style="padding:8px;text-align:center;font-weight:900;font-size:11pt">PHOTOVOLTAIC<br/>POWER SOURCE</div>
+          <div style="padding:0 8px 8px;font-size:8pt;text-align:center">LOC: EMT / conduit raceways<br/>CODE: NEC 690.31(D)(2)</div>
         </div>
-        <div class="panel">
-          <h2>Rapid shutdown</h2>
-          <p><strong>SOLAR PV SYSTEM EQUIPPED WITH RAPID SHUTDOWN</strong></p>
-          <p class="tiny">Initiator location per SLD · NEC 690.12 · wording per AHJ edition.</p>
+
+        <!-- RED MAIN PV DISCO -->
+        <div style="border:2px solid #8b0000;background:#c41e3a;color:#fff">
+          <div style="padding:8px;text-align:center;font-weight:900;font-size:10pt">MAIN PHOTOVOLTAIC<br/>SYSTEM DISCONNECT</div>
+          <div style="padding:0 8px 8px;font-size:8pt;text-align:center">LOC: Main service disco / meter<br/>CODE: NEC 690.13(B)</div>
         </div>
+
+        <!-- RED RSD SWITCH -->
+        <div style="border:2px solid #8b0000;background:#c41e3a;color:#fff">
+          <div style="padding:8px;text-align:center;font-weight:900;font-size:10pt">RAPID SHUTDOWN SWITCH<br/>FOR SOLAR PV SYSTEM</div>
+          <div style="padding:0 8px 8px;font-size:8pt;text-align:center">RED bg · WHITE text · reflective preferred<br/>LOC: On / ≤3 ft of initiator · NEC 690.12(D)(2)</div>
+        </div>
+
+        <!-- ORANGE DUAL POWER -->
+        <div style="border:2px solid #111;background:#fff">
+          <div style="background:#e65c00;color:#fff;padding:4px 6px;font-weight:900">⚠ WARNING &nbsp; DUAL POWER SOURCE</div>
+          <div style="padding:6px">
+            <div style="font-weight:800">SECOND SOURCE IS PHOTOVOLTAIC SYSTEM</div>
+            <div class="tiny" style="margin-top:4px">LOC: Point of interconnection / production meter<br/>CODE: NEC 705.30(C) / 690.59</div>
+          </div>
+        </div>
+
+        <!-- YELLOW CAUTION DIRECTORY -->
+        <div style="border:2px solid #111;grid-column:span 2;background:#ffd100;color:#111">
+          <div style="padding:6px 8px;font-weight:900;font-size:11pt;text-align:center">CAUTION! MULTIPLE SOURCES OF POWER</div>
+          <div style="padding:0 10px 8px;font-size:8.5pt">
+            POWER TO THIS BUILDING IS ALSO SUPPLIED FROM THE FOLLOWING SOURCES WITH DISCONNECTS LOCATED AS SHOWN ON SLD (PV-3):
+            <ul style="margin:4px 0 0;padding-left:16px">
+              <li>(E) {{ service.main_breaker_a }}A MAIN SERVICE / DISCO(S)</li>
+              <li>(N) {% if inverters %}{{ inverters[0].manufacturer }} {{ inverters[0].model }}{% else %}INVERTER{% endif %}</li>
+              {% if totals.battery_kwh %}<li>(N) ENERGY STORAGE {{ '%.0f'|format(totals.battery_kwh) }} kWh</li>{% endif %}
+              {% if service.ac_disco_a %}<li>(N) {{ service.ac_disco_a }}A AC DISCONNECT</li>{% endif %}
+            </ul>
+            <div class="tiny" style="margin-top:4px">LOC: Service equipment · NEC / IFC directory requirements</div>
+          </div>
+        </div>
+
+        <!-- RSD PLACARD yellow house -->
+        <div style="border:3px solid #111;background:#ffd100;color:#111;min-height:120px">
+          <div style="padding:6px;font-weight:900;font-size:10pt;text-align:center;line-height:1.2">
+            SOLAR PV SYSTEM EQUIPPED<br/>WITH RAPID SHUTDOWN
+          </div>
+          <div style="text-align:center;font-size:20pt">⌂</div>
+          <div style="padding:4px 8px;font-size:7.5pt;text-align:center;font-weight:700">
+            TURN RAPID SHUTDOWN SWITCH TO THE “OFF” POSITION TO SHUT DOWN PV SYSTEM AND REDUCE SHOCK HAZARD IN THE ARRAY.
+          </div>
+          <div class="tiny" style="text-align:center;padding-bottom:4px">LOC: MSP · NEC 690.12(D) · title ≥ 3/8″ caps</div>
+        </div>
+
         {% if totals.battery_kwh %}
-        <div class="panel">
-          <h2>Energy storage disconnect</h2>
-          <p>ESS DISCONNECT · Nominal system voltage per equipment · max fault current per mfr.</p>
-          <p class="tiny">NEC 706 · apply at battery / hybrid disconnect means.</p>
+        <div style="border:2px solid #8b0000;background:#fff;grid-column:span 2">
+          <div style="background:#8b0000;color:#fff;padding:4px 8px;font-weight:900">ENERGY STORAGE SYSTEM DISCONNECT</div>
+          <div style="padding:6px 8px;font-size:8.5pt">
+            NOMINAL VOLTAGE: <strong>240 VAC / 48 VDC class</strong> &nbsp;·&nbsp;
+            APPLY TO: BATTERY / HYBRID DISCONNECT MEANS<br/>
+            MAX FAULT / Isc: per manufacturer nameplate &nbsp;·&nbsp; CODE: NEC 706
+          </div>
         </div>
         {% endif %}
-        <div class="panel">
-          <h2>Directory / plaque</h2>
-          <p>Building directory showing PV, ESS, disco locations (site map sketch field-verified).</p>
+
+        <div style="border:2px solid #111;background:#fff;grid-column:span 3;padding:6px 8px">
+          <strong>FIELD NOTES (ANSI / NEC):</strong>
+          Signs permanent, engraved or printed — <em>not handwritten</em>. Durable for environment. Do not cover manufacturer labels.
+          Colors shown are required industry practice (red/white RSD &amp; disco, yellow caution directory, orange dual-source). Match NEC edition adopted by <strong>{{ meta.ahj or 'AHJ' }}</strong>.
         </div>
-      </div>
-      <div class="panel tiny">
-        Labels permanent, engraved/printed, contrasting color, not handwritten. Do not cover manufacturer labels.
-        Exact text shall match the NEC edition adopted by {{ meta.ahj or 'the AHJ' }}.
       </div>
     </div>
     <aside class="side">
       <div class="tb-head">TITLE BLOCK</div>
       <div class="tb-row"><div class="lbl">Sheet</div><div class="val">LABELS &amp; PLACARDS</div></div>
       <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-6</div></div>
+      <div class="tb-row"><div class="lbl">Colors</div><div class="val tiny">Red / Yellow / Orange / Black per ANSI Z535</div></div>
     </aside>
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-    <div><div class="lbl">Title</div><div class="val">Warning Labels &amp; Placards</div></div>
+    <div><div class="lbl">Title</div><div class="val">Warning Labels &amp; Placards (Colored)</div></div>
     <div><div class="lbl">Drawing</div><div class="val">PV-6</div></div>
     <div><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
     <div><div class="lbl">Scale</div><div class="val">NTS</div></div>

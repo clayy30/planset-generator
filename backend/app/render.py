@@ -13,7 +13,8 @@ from markupsafe import Markup
 from .calcs import compute_system, totals_to_dict
 from .equipment_lib import AppendixPackage, appendix_to_dict, build_appendix, match_equipment
 from .layout import compute_structural, structural_to_dict
-from .models import ProjectInput
+from .models import ProjectInput, WireSegment
+from .sld import generate_sld_svg, segments_as_wires
 
 TEMPLATES = Path(__file__).parent / "templates"
 
@@ -38,6 +39,21 @@ def build_context(
     totals = compute_system(project)
     structural = compute_structural(project)
     matched = appendix.docs if appendix else match_equipment(project)
+    sld_svg = generate_sld_svg(project, totals)
+    # Prefer explicit project wires; else auto from SLD schedule
+    wire_rows = project.wires
+    if not wire_rows:
+        wire_rows = [
+            WireSegment(
+                name=w["name"],
+                from_equip=w["from_equip"],
+                to_equip=w["to_equip"],
+                conductors=w["conductors"],
+                ocpd=w["ocpd"],
+                notes=w["notes"],
+            )
+            for w in segments_as_wires(project, totals)
+        ]
     meta = project.meta
     addr = meta.address
     full_address = ", ".join(
@@ -142,7 +158,8 @@ def build_context(
         "inverters": project.inverters,
         "batteries": project.batteries,
         "array": project.array,
-        "wires": project.wires,
+        "wires": wire_rows,
+        "sld_svg": sld_svg,
         "critical_loads": project.critical_loads,
         "totals": totals,
         "t": totals_to_dict(totals),
@@ -183,4 +200,5 @@ def render_planset_html(
     # SVG must not be HTML-escaped
     ctx["svg_roof"] = Markup(ctx["structural"].svg_roof)
     ctx["svg_attachment"] = Markup(ctx["structural"].svg_attachment)
+    ctx["svg_sld"] = Markup(ctx["sld_svg"])
     return tmpl.render(**ctx)
