@@ -165,6 +165,36 @@ def api_preview_equipment(project: ProjectInput):
     }
 
 
+@app.get("/api/gis/lookup")
+def api_gis_lookup(
+    line1: str,
+    city: str = "",
+    state: str = "GA",
+    zip: str = "",
+):
+    """Geocode + parcel PIN lookup for title block (public endpoints)."""
+    from .gis import lookup_address
+
+    result = lookup_address(line1=line1, city=city, state=state, zip_code=zip)
+    return result.to_dict()
+
+
+@app.post("/api/gis/enrich")
+def api_gis_enrich(project: ProjectInput):
+    """Fill project address/APN/coords/owner from GIS using current address."""
+    from .gis import apply_to_project_dict, lookup_address
+
+    a = project.meta.address
+    parcel = lookup_address(a.line1, a.city, a.state, a.zip)
+    data = project.model_dump()
+    apply_to_project_dict(data, parcel)
+    enriched = ProjectInput.model_validate(data)
+    return {
+        "project": enriched,
+        "parcel": parcel.to_dict(),
+    }
+
+
 @app.get("/api/presets/duracell-400a")
 def preset_duracell():
     """Seed example: Max Hybrid 15 on 400A dual 200A disco — half-home."""
@@ -248,8 +278,28 @@ def api_bridge_info():
         "method": "POST",
         "accepts": "Lumen ProposalProject JSON",
         "returns": "planset project_id + planset HTML URL",
+        "materials": "/api/materials",
         "cors": "open for local studio integration",
     }
+
+
+@app.get("/api/materials")
+def api_materials():
+    """Full approved materials catalog for dropdowns (modules, inverters, batteries, racking)."""
+    from .materials_catalog import catalog_payload
+
+    return catalog_payload()
+
+
+@app.get("/api/materials/{category}")
+def api_materials_category(category: str):
+    from .materials_catalog import catalog_payload
+
+    data = catalog_payload()
+    key = category.lower().strip()
+    if key not in data or key in ("version", "note"):
+        raise HTTPException(404, f"Unknown category: {category}")
+    return {"category": key, "items": data[key]}
 
 
 # Frontend static last so API routes win

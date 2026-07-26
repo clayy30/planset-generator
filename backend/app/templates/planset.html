@@ -3,6 +3,70 @@
 <head>
   <meta charset="UTF-8" />
   <title>{{ meta.project_name }} — Planset {{ meta.revision }}</title>
+  {# ---- reusable customer / parcel title rail (right side, all sheets) ---- #}
+  {% macro customer_rail(sheet_name, sheet_number) -%}
+    <aside class="side customer-block">
+      <div class="tb-head">{{ meta.company | upper }}</div>
+      {% if meta.company_address %}
+      <div class="tb-row"><div class="lbl">Office</div><div class="val">{{ meta.company_address }}</div></div>
+      {% endif %}
+      <div class="tb-row">
+        <div class="lbl">Revision</div>
+        <table class="rev-table">
+          <tr><th>Desc</th><th>Date</th><th>Rev</th></tr>
+          <tr><td>{{ meta.revision_note }}</td><td>{{ prepared_date }}</td><td>{{ meta.revision }}</td></tr>
+        </table>
+      </div>
+      <div class="proj-name">{{ meta.customer_name or meta.project_name }}</div>
+      <div class="addr-block">
+        {{ addr.line1 }}{% if addr.line2 %}<br/>{{ addr.line2 }}{% endif %}<br/>
+        {{ addr.city }}, {{ addr.state }} {{ addr.zip }}{% if addr.zip4 %}-{{ addr.zip4 }}{% endif %}<br/>
+        {% if addr.county %}<span class="tiny">{{ addr.county }}</span>{% endif %}
+      </div>
+      <div class="tb-row">
+        <div class="lbl">Parcel / APN (PIN)</div>
+        <div class="pin-big">{{ addr.apn or 'TBD — VERIFY' }}</div>
+      </div>
+      {% if addr.owner_of_record %}
+      <div class="tb-row">
+        <div class="lbl">Owner of record (GIS)</div>
+        <div class="val">{{ addr.owner_of_record }}</div>
+      </div>
+      {% endif %}
+      <div class="meta-grid">
+        <div><div class="lbl">Utility</div><div class="val">{{ meta.utility or '—' }}</div></div>
+        <div><div class="lbl">AHJ</div><div class="val">{{ meta.ahj or '—' }}</div></div>
+        <div><div class="lbl">Acres</div><div class="val">{% if addr.acres is not none %}{{ '%.2f'|format(addr.acres) }}{% else %}—{% endif %}</div></div>
+        <div><div class="lbl">Use / zoning</div><div class="val">{{ addr.property_use or '—' }}</div></div>
+        <div><div class="lbl">Lat</div><div class="val mono" style="font-size:7.5pt">{% if addr.latitude is not none %}{{ '%.6f'|format(addr.latitude) }}{% else %}—{% endif %}</div></div>
+        <div><div class="lbl">Lon</div><div class="val mono" style="font-size:7.5pt">{% if addr.longitude is not none %}{{ '%.6f'|format(addr.longitude) }}{% else %}—{% endif %}</div></div>
+      </div>
+      {% if addr.legal_description %}
+      <div class="tb-row">
+        <div class="lbl">Legal description</div>
+        <div class="val tiny">{{ addr.legal_description[:160] }}{% if addr.legal_description|length > 160 %}…{% endif %}</div>
+      </div>
+      {% endif %}
+      <div class="tb-row">
+        <div class="lbl">Designer</div>
+        <div class="val">{{ meta.designer }}</div>
+      </div>
+      {% if addr.gis_source %}
+      <div class="tb-row">
+        <div class="lbl">GIS source</div>
+        <div class="val tiny">{{ addr.gis_source }}</div>
+      </div>
+      {% endif %}
+      <div class="sheet-id">
+        <div class="lbl">Sheet name</div>
+        <div class="val" style="font-size:9pt;text-transform:uppercase">{{ sheet_name }}</div>
+        <div class="lbl" style="margin-top:4px">Sheet size</div>
+        <div class="val">ANSI B · 11" × 17"</div>
+        <div class="lbl" style="margin-top:4px">Sheet number</div>
+        <div class="num">{{ sheet_number }}</div>
+      </div>
+    </aside>
+  {%- endmacro %}
   <style>
     /* ANSI B 11×17 landscape sheet */
     @page { size: 17in 11in; margin: 0.35in; }
@@ -101,6 +165,36 @@
       border: 1px solid #bbb; padding: 2px 3px; text-align: left;
     }
     .side .rev-table th { background: #f0f0f0; }
+    /* Customer / parcel title strip (SPS-style right rail) */
+    .side.customer-block .tb-head { background: #111; letter-spacing: 0.06em; }
+    .side.customer-block .proj-name {
+      font-size: 12pt; font-weight: 800; line-height: 1.15;
+      text-transform: uppercase; padding: 8px 6px 4px;
+      border-bottom: 2px solid #111;
+    }
+    .side.customer-block .addr-block {
+      padding: 6px; font-size: 8.5pt; font-weight: 600; line-height: 1.35;
+      border-bottom: 1px solid #ccc;
+    }
+    .side.customer-block .pin-big {
+      font-size: 11pt; font-weight: 800; letter-spacing: 0.02em;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+    }
+    .side.customer-block .meta-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+      border-bottom: 1px solid #ccc;
+    }
+    .side.customer-block .meta-grid > div {
+      padding: 4px 6px; border-right: 1px solid #eee; border-bottom: 1px solid #eee;
+    }
+    .side.customer-block .meta-grid > div:nth-child(even) { border-right: none; }
+    .side.customer-block .sheet-id {
+      margin-top: auto; border-top: 2px solid #111; padding: 6px;
+      background: #f4f4f4;
+    }
+    .side.customer-block .sheet-id .num {
+      font-size: 16pt; font-weight: 900; letter-spacing: 0.04em;
+    }
 
     /* Title block footer strip */
     .footer {
@@ -311,28 +405,7 @@
       </div>
     </div>
 
-    <aside class="side">
-      <div class="tb-head">{{ meta.company }}</div>
-      <div class="tb-row"><div class="lbl">Designer</div><div class="val">{{ meta.designer }}</div></div>
-      {% if meta.company_address %}<div class="tb-row"><div class="lbl">Office</div><div class="val">{{ meta.company_address }}</div></div>{% endif %}
-      <div class="tb-row">
-        <div class="lbl">Revisions</div>
-        <table class="rev-table">
-          <tr><th>Desc</th><th>Date</th><th>Rev</th></tr>
-          <tr><td>{{ meta.revision_note }}</td><td>{{ prepared_date }}</td><td>{{ meta.revision }}</td></tr>
-        </table>
-      </div>
-      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-      <div class="tb-row"><div class="lbl">Customer</div><div class="val">{{ meta.customer_name }}</div></div>
-      <div class="tb-row"><div class="lbl">Address</div><div class="val">{{ full_address }}</div></div>
-      <div class="tb-row"><div class="lbl">APN</div><div class="val">{{ addr.apn or '—' }}</div></div>
-      <div class="tb-row"><div class="lbl">Utility</div><div class="val">{{ meta.utility or '—' }}</div></div>
-      <div class="tb-row"><div class="lbl">AHJ</div><div class="val">{{ meta.ahj or '—' }}</div></div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">COVER SHEET</div></div>
-      <div class="tb-row"><div class="lbl">Size</div><div class="val">ANSI B · 11" × 17"</div></div>
-      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-0</div></div>
-      <div class="tb-row"><div class="lbl">Generated</div><div class="val">{{ generated }}</div></div>
-    </aside>
+    {{ customer_rail('COVER SHEET', 'PV-0') }}
   </div>
 
   <div class="footer">
@@ -435,17 +508,7 @@
         <ul>{% for n in notes_electrical %}<li>{{ n }}</li>{% endfor %}</ul>
       </div>
     </div>
-    <aside class="side">
-      <div class="tb-head">TITLE BLOCK</div>
-      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-      <div class="tb-row"><div class="lbl">Customer</div><div class="val">{{ meta.customer_name }}</div></div>
-      <div class="tb-row"><div class="lbl">Address</div><div class="val">{{ full_address }}</div></div>
-      <div class="tb-row"><div class="lbl">Utility / AHJ</div><div class="val">{{ meta.utility or '—' }} / {{ meta.ahj or '—' }}</div></div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">SITE &amp; PROJECT DATA</div></div>
-      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-1</div></div>
-      <div class="tb-row"><div class="lbl">Company</div><div class="val">{{ meta.company }}</div></div>
-      <div class="tb-row"><div class="lbl">Designer</div><div class="val">{{ meta.designer }}</div></div>
-    </aside>
+    {{ customer_rail('SITE & PROJECT DATA', 'PV-1') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
@@ -527,21 +590,7 @@
       </div>
       {% endif %}
     </div>
-    <aside class="side">
-      <div class="tb-head">TITLE BLOCK</div>
-      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">ROOF PLAN WITH MODULES</div></div>
-      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-2</div></div>
-      <div class="tb-row"><div class="lbl">Wind</div><div class="val">{{ criteria.wind_speed_mph }} mph · Exp {{ criteria.wind_exposure }}</div></div>
-      <div class="tb-row"><div class="lbl">Setbacks</div><div class="val tiny">Ridge / eave / rake enforced in packer</div></div>
-      <div class="tb-row"><div class="lbl">Note</div><div class="val tiny">Actual roof conditions may vary — verify on site before install</div></div>
-      <div class="tb-row">
-        <div class="lbl">Legend</div>
-        <div class="val tiny">
-          Blue = module · Pink band = fire/setback zone · Dims in feet
-        </div>
-      </div>
-    </aside>
+    {{ customer_rail('ROOF PLAN WITH MODULES', 'PV-2') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
@@ -610,14 +659,7 @@
         </div>
       </div>
     </div>
-    <aside class="side">
-      <div class="tb-head">TITLE BLOCK</div>
-      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">ATTACHMENT / STRUCTURAL</div></div>
-      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-2A</div></div>
-      <div class="tb-row"><div class="lbl">Racking</div><div class="val">{{ array.structural.racking_mfr }} {{ array.structural.rail_model }}</div></div>
-      <div class="tb-row"><div class="lbl">Attachments</div><div class="val">{{ st.bom.attachments }} {{ array.structural.attachment_hardware }}</div></div>
-    </aside>
+    {{ customer_rail('ATTACHMENT / STRUCTURAL', 'PV-2A') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
@@ -641,12 +683,13 @@
     </div>
     <div class="kw">PV-3<span>One-line · field install</span></div>
   </div>
-  <div class="body sheet-full">
+  <div class="body">
     <div class="main">
       <div class="sld-wrap" style="padding:4px;background:#fff">
         {{ svg_sld }}
       </div>
     </div>
+    {{ customer_rail('ELECTRICAL SINGLE-LINE', 'PV-3') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
@@ -744,16 +787,7 @@
         </div>
       </div>
     </div>
-    <aside class="side">
-      <div class="tb-head">CALC QA</div>
-      <div class="tb-row"><div class="lbl">Flags</div>
-        <div class="val">{% for f in totals.quality_flags %}<span class="badge blue">{{ f }}</span> {% endfor %}</div>
-      </div>
-      <div class="tb-row"><div class="lbl">Warnings</div>
-        <div class="val tiny">{% if totals.warnings %}{% for w in totals.warnings %}• {{ w }}<br/>{% endfor %}{% else %}None{% endif %}</div>
-      </div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">PV-4 CALCULATIONS</div></div>
-    </aside>
+    {{ customer_rail('ELECTRICAL CALCULATIONS', 'PV-4') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
@@ -838,12 +872,7 @@
         </table>
       </div>
     </div>
-    <aside class="side">
-      <div class="tb-head">TITLE BLOCK</div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">WIRE &amp; BOM</div></div>
-      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-5</div></div>
-      <div class="tb-row"><div class="lbl">Note</div><div class="val tiny">Final wire sizes stamped by EC/PE as required</div></div>
-    </aside>
+    {{ customer_rail('WIRE SCHEDULE & BOM', 'PV-5') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
@@ -960,12 +989,7 @@
         </div>
       </div>
     </div>
-    <aside class="side">
-      <div class="tb-head">TITLE BLOCK</div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">LABELS &amp; PLACARDS</div></div>
-      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-6</div></div>
-      <div class="tb-row"><div class="lbl">Colors</div><div class="val tiny">Red / Yellow / Orange / Black per ANSI Z535</div></div>
-    </aside>
+    {{ customer_rail('WARNING LABELS & PLACARDS', 'PV-6') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
@@ -1032,15 +1056,7 @@
         {% endif %}
       </div>
     </div>
-    <aside class="side">
-      <div class="tb-head">SIGN-OFF</div>
-      <div class="tb-row"><div class="lbl">Designer</div><div class="val">{{ meta.designer }}</div></div>
-      <div class="tb-row"><div class="lbl">Date</div><div class="val">{{ prepared_date }}</div></div>
-      <div class="tb-row"><div class="lbl">Rev</div><div class="val">{{ meta.revision }}</div></div>
-      <div class="tb-row"><div class="lbl">EC review</div><div class="val">________________</div></div>
-      <div class="tb-row"><div class="lbl">PE stamp</div><div class="val">________________</div></div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">PV-7 QA CHECKLIST</div></div>
-    </aside>
+    {{ customer_rail('QA / AHJ CHECKLIST', 'PV-7') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
@@ -1093,14 +1109,7 @@
         FlashFoot2 cut sheet is the lag-bolt authority for typical IronRidge residential attachments.
       </div>
     </div>
-    <aside class="side">
-      <div class="tb-head">TITLE BLOCK</div>
-      <div class="tb-row"><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>
-      <div class="tb-row"><div class="lbl">Sheet</div><div class="val">EQUIPMENT SPEC APPENDIX</div></div>
-      <div class="tb-row"><div class="lbl">Number</div><div class="val">PV-8</div></div>
-      <div class="tb-row"><div class="lbl">Docs</div><div class="val">{{ matched_specs|length }} matched</div></div>
-      <div class="tb-row"><div class="lbl">Raster pages</div><div class="val">{{ appendix_pages|length }}</div></div>
-    </aside>
+    {{ customer_rail('EQUIPMENT SPEC APPENDIX', 'PV-8') }}
   </div>
   <div class="footer">
     <div><div class="lbl">Project</div><div class="val">{{ meta.project_name }}</div></div>

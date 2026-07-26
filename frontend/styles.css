@@ -211,3 +211,7 @@ input:focus, select:focus { outline: 1px solid var(--accent); border-color: var(
 .result.err { border-color: var(--danger); background: rgba(240, 113, 120, 0.08); }
 .result a { font-weight: 700; }
 .hidden { display: none !important; }
+
+.grid2 .span2 { grid-column: 1 / -1; }
+label select { width: 100%; margin-top: 4px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+

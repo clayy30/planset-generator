@@ -49,17 +49,24 @@
             <label>City <input id="city" value="Guyton" /></label>
             <label>State <input id="state" value="GA" /></label>
             <label>ZIP <input id="zip" value="31312" /></label>
-            <label>APN <input id="apn" value="" /></label>
+            <label>APN / PIN <input id="apn" value="" placeholder="auto from GIS" /></label>
+            <label>County <input id="county" value="" placeholder="auto from GIS" /></label>
             <label>Utility <input id="utility" value="Georgia Power" /></label>
             <label>AHJ <input id="ahj" value="Effingham County" /></label>
+            <label>Owner of record <input id="owner_of_record" value="" placeholder="auto from GIS" /></label>
+            <label>Acres <input id="acres" value="" placeholder="auto" /></label>
+            <label>Lat <input id="latitude" value="" placeholder="auto" /></label>
+            <label>Lon <input id="longitude" value="" placeholder="auto" /></label>
             <label>Designer <input id="designer" value="Savannah Solar Power" /></label>
             <label>Company <input id="company" value="Savannah Solar Power" /></label>
             <label>Revision <input id="revision" value="0" /></label>
           </div>
           <div class="row">
+            <button type="button" class="primary" id="btn-gis">Lookup parcel (GIS)</button>
             <button type="button" class="ghost" id="btn-preset-duracell">Load Duracell 400A preset</button>
             <button type="button" class="ghost" id="btn-preset-eg4">Load EG4 GridBOSS preset</button>
           </div>
+          <pre id="gis-status" class="calc-box" style="display:none;margin-top:10px"></pre>
         </section>
 
         <!-- STEP 1 -->
@@ -112,9 +119,15 @@
         <!-- STEP 2 -->
         <section class="step hidden" data-step="2">
           <h2>PV modules</h2>
+          <p class="hint">Select from the approved materials list — nameplate fields auto-fill from the catalog.</p>
           <div class="grid2">
-            <label>Manufacturer <input id="mod_mfr" value="Generic Premium" /></label>
-            <label>Model <input id="mod_model" value="450W-144HC" /></label>
+            <label class="span2">Module (materials list)
+              <select id="mod_catalog">
+                <option value="">— Select module —</option>
+              </select>
+            </label>
+            <label>Manufacturer <input id="mod_mfr" value="Canadian Solar" readonly /></label>
+            <label>Model <input id="mod_model" value="CS6.1-54TM-H-450" /></label>
             <label>Quantity <input type="number" id="mod_qty" value="24" /></label>
             <label>Pmax W <input type="number" id="mod_pmax" value="450" /></label>
             <label>Vmp <input type="number" id="mod_vmp" value="41.5" step="0.01" /></label>
@@ -122,14 +135,20 @@
             <label>Voc <input type="number" id="mod_voc" value="49.5" step="0.01" /></label>
             <label>Isc <input type="number" id="mod_isc" value="11.5" step="0.01" /></label>
             <label>Voc coeff %/°C <input type="number" id="mod_coeff" value="-0.27" step="0.01" /></label>
+            <label class="span2">Spec sheet <input id="mod_spec" value="" readonly /></label>
           </div>
-          <p class="hint">Multi-SKU arrays: load a preset or extend via API JSON. UI v1 supports primary module type.</p>
         </section>
 
         <!-- STEP 3 -->
         <section class="step hidden" data-step="3">
           <h2>Inverter &amp; battery</h2>
+          <p class="hint">Pick catalog gear so electrical calcs use real nameplates (not guesses).</p>
           <div class="grid2">
+            <label class="span2">Inverter (materials list)
+              <select id="inv_catalog">
+                <option value="">— Select inverter —</option>
+              </select>
+            </label>
             <label>Inv manufacturer <input id="inv_mfr" value="Duracell Power Center" /></label>
             <label>Inv model <input id="inv_model" value="Max Hybrid 15" /></label>
             <label>Quantity <input type="number" id="inv_qty" value="1" /></label>
@@ -141,10 +160,21 @@
             <label>Max Imp / MPPT <input type="number" id="inv_imp_mppt" value="26" /></label>
             <label>Passthrough A <input type="number" id="inv_pass" value="200" /></label>
             <label>Listing <input id="inv_listing" value="UL 1741 / IEEE 1547a" /></label>
+            <label class="span2">Battery (materials list)
+              <select id="bat_catalog">
+                <option value="">— Select battery —</option>
+              </select>
+            </label>
             <label>Bat manufacturer <input id="bat_mfr" value="Duracell Power Center" /></label>
             <label>Bat model <input id="bat_model" value="Stack 15-30" /></label>
             <label>Bat qty <input type="number" id="bat_qty" value="1" /></label>
             <label>Usable kWh each <input type="number" id="bat_kwh" value="30" step="0.1" /></label>
+            <label class="span2">Racking (materials list)
+              <select id="rack_catalog">
+                <option value="">— Select racking —</option>
+              </select>
+            </label>
+            <label class="span2">Racking summary <input id="rack_label" value="IronRidge XR-100 + FlashFoot 2" readonly /></label>
           </div>
         </section>
 

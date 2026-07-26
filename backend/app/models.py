@@ -41,6 +41,16 @@ class Address(BaseModel):
     apn: str = ""
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    # GIS / assessor fields (title block)
+    county: str = ""
+    owner_of_record: str = ""
+    acres: Optional[float] = None
+    legal_description: str = ""
+    property_use: str = ""
+    year_built: str = ""
+    zip4: str = ""
+    structure_type: str = ""
+    gis_source: str = ""
 
 
 class ProjectMeta(BaseModel):
