@@ -14,6 +14,7 @@ from .calcs import compute_system, totals_to_dict
 from .equipment_lib import AppendixPackage, appendix_to_dict, build_appendix, match_equipment
 from .layout import compute_structural, structural_to_dict
 from .models import ProjectInput, WireSegment
+from .labels_page import generate_labels_svg
 from .sld import generate_sld_svg, segments_as_wires
 
 TEMPLATES = Path(__file__).parent / "templates"
@@ -40,6 +41,7 @@ def build_context(
     structural = compute_structural(project)
     matched = appendix.docs if appendix else match_equipment(project)
     sld_svg = generate_sld_svg(project, totals)
+    labels_svg = generate_labels_svg(project, totals)
     # Prefer explicit project wires; else auto from SLD schedule
     wire_rows = project.wires
     if not wire_rows:
@@ -160,6 +162,7 @@ def build_context(
         "array": project.array,
         "wires": wire_rows,
         "sld_svg": sld_svg,
+        "labels_svg": labels_svg,
         "critical_loads": project.critical_loads,
         "totals": totals,
         "t": totals_to_dict(totals),
@@ -201,4 +204,5 @@ def render_planset_html(
     ctx["svg_roof"] = Markup(ctx["structural"].svg_roof)
     ctx["svg_attachment"] = Markup(ctx["structural"].svg_attachment)
     ctx["svg_sld"] = Markup(ctx["sld_svg"])
+    ctx["svg_labels"] = Markup(ctx["labels_svg"])
     return tmpl.render(**ctx)

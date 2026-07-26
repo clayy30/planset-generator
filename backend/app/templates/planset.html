@@ -884,102 +884,12 @@
     <div class="kw">PV-6<span>Colored stickers</span></div>
   </div>
   <div class="body">
-    <div class="main">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:8.5pt;">
-
-        <!-- WHITE / BLACK WARNING -->
-        <div style="border:2px solid #111;background:#fff">
-          <div style="background:#111;color:#fff;padding:4px 6px;font-weight:800;display:flex;align-items:center;gap:6px">
-            <span style="background:#fc0;color:#111;padding:1px 6px;font-weight:900">⚠ WARNING</span> ELECTRICAL SHOCK HAZARD
-          </div>
-          <div style="padding:6px">
-            <div style="font-weight:700">TERMINALS ON LINE AND LOAD SIDES MAY BE ENERGIZED IN THE OPEN POSITION</div>
-            <div class="tiny" style="margin-top:4px">LOCATION: Inverter(s), AC disconnect(s), AC combiner if any<br/>CODE: NEC 705.20 / 690.13(B)</div>
-          </div>
-        </div>
-
-        <!-- RED AC DISCONNECT -->
-        <div style="border:2px solid #8b0000;background:#c41e3a;color:#fff">
-          <div style="padding:8px;text-align:center;font-weight:900;font-size:12pt;letter-spacing:0.04em">PHOTOVOLTAIC<br/>AC DISCONNECT</div>
-          <div style="padding:0 8px 8px;font-size:8pt;text-align:center">
-            MAX AC OPERATING CURRENT: <strong>{{ '%.1f'|format(totals.ac_a_continuous) }} A</strong><br/>
-            NOMINAL AC VOLTAGE: <strong>240 VAC</strong><br/>
-            <span style="opacity:0.9">LOC: AC disco / POI · NEC 690.13(B) / 690.54</span>
-          </div>
-        </div>
-
-        <!-- RED PV POWER SOURCE -->
-        <div style="border:2px solid #8b0000;background:#c41e3a;color:#fff">
-          <div style="padding:8px;text-align:center;font-weight:900;font-size:11pt">PHOTOVOLTAIC<br/>POWER SOURCE</div>
-          <div style="padding:0 8px 8px;font-size:8pt;text-align:center">LOC: EMT / conduit raceways<br/>CODE: NEC 690.31(D)(2)</div>
-        </div>
-
-        <!-- RED MAIN PV DISCO -->
-        <div style="border:2px solid #8b0000;background:#c41e3a;color:#fff">
-          <div style="padding:8px;text-align:center;font-weight:900;font-size:10pt">MAIN PHOTOVOLTAIC<br/>SYSTEM DISCONNECT</div>
-          <div style="padding:0 8px 8px;font-size:8pt;text-align:center">LOC: Main service disco / meter<br/>CODE: NEC 690.13(B)</div>
-        </div>
-
-        <!-- RED RSD SWITCH -->
-        <div style="border:2px solid #8b0000;background:#c41e3a;color:#fff">
-          <div style="padding:8px;text-align:center;font-weight:900;font-size:10pt">RAPID SHUTDOWN SWITCH<br/>FOR SOLAR PV SYSTEM</div>
-          <div style="padding:0 8px 8px;font-size:8pt;text-align:center">RED bg · WHITE text · reflective preferred<br/>LOC: On / ≤3 ft of initiator · NEC 690.12(D)(2)</div>
-        </div>
-
-        <!-- ORANGE DUAL POWER -->
-        <div style="border:2px solid #111;background:#fff">
-          <div style="background:#e65c00;color:#fff;padding:4px 6px;font-weight:900">⚠ WARNING &nbsp; DUAL POWER SOURCE</div>
-          <div style="padding:6px">
-            <div style="font-weight:800">SECOND SOURCE IS PHOTOVOLTAIC SYSTEM</div>
-            <div class="tiny" style="margin-top:4px">LOC: Point of interconnection / production meter<br/>CODE: NEC 705.30(C) / 690.59</div>
-          </div>
-        </div>
-
-        <!-- YELLOW CAUTION DIRECTORY -->
-        <div style="border:2px solid #111;grid-column:span 2;background:#ffd100;color:#111">
-          <div style="padding:6px 8px;font-weight:900;font-size:11pt;text-align:center">CAUTION! MULTIPLE SOURCES OF POWER</div>
-          <div style="padding:0 10px 8px;font-size:8.5pt">
-            POWER TO THIS BUILDING IS ALSO SUPPLIED FROM THE FOLLOWING SOURCES WITH DISCONNECTS LOCATED AS SHOWN ON SLD (PV-3):
-            <ul style="margin:4px 0 0;padding-left:16px">
-              <li>(E) {{ service.main_breaker_a }}A MAIN SERVICE / DISCO(S)</li>
-              <li>(N) {% if inverters %}{{ inverters[0].manufacturer }} {{ inverters[0].model }}{% else %}INVERTER{% endif %}</li>
-              {% if totals.battery_kwh %}<li>(N) ENERGY STORAGE {{ '%.0f'|format(totals.battery_kwh) }} kWh</li>{% endif %}
-              {% if service.ac_disco_a %}<li>(N) {{ service.ac_disco_a }}A AC DISCONNECT</li>{% endif %}
-            </ul>
-            <div class="tiny" style="margin-top:4px">LOC: Service equipment · NEC / IFC directory requirements</div>
-          </div>
-        </div>
-
-        <!-- RSD PLACARD yellow house -->
-        <div style="border:3px solid #111;background:#ffd100;color:#111;min-height:120px">
-          <div style="padding:6px;font-weight:900;font-size:10pt;text-align:center;line-height:1.2">
-            SOLAR PV SYSTEM EQUIPPED<br/>WITH RAPID SHUTDOWN
-          </div>
-          <div style="text-align:center;font-size:20pt">⌂</div>
-          <div style="padding:4px 8px;font-size:7.5pt;text-align:center;font-weight:700">
-            TURN RAPID SHUTDOWN SWITCH TO THE “OFF” POSITION TO SHUT DOWN PV SYSTEM AND REDUCE SHOCK HAZARD IN THE ARRAY.
-          </div>
-          <div class="tiny" style="text-align:center;padding-bottom:4px">LOC: MSP · NEC 690.12(D) · title ≥ 3/8″ caps</div>
-        </div>
-
-        {% if totals.battery_kwh %}
-        <div style="border:2px solid #8b0000;background:#fff;grid-column:span 2">
-          <div style="background:#8b0000;color:#fff;padding:4px 8px;font-weight:900">ENERGY STORAGE SYSTEM DISCONNECT</div>
-          <div style="padding:6px 8px;font-size:8.5pt">
-            NOMINAL VOLTAGE: <strong>240 VAC / 48 VDC class</strong> &nbsp;·&nbsp;
-            APPLY TO: BATTERY / HYBRID DISCONNECT MEANS<br/>
-            MAX FAULT / Isc: per manufacturer nameplate &nbsp;·&nbsp; CODE: NEC 706
-          </div>
-        </div>
-        {% endif %}
-
-        <div style="border:2px solid #111;background:#fff;grid-column:span 3;padding:6px 8px">
-          <strong>FIELD NOTES (ANSI / NEC):</strong>
-          Signs permanent, engraved or printed — <em>not handwritten</em>. Durable for environment. Do not cover manufacturer labels.
-          Colors shown are required industry practice (red/white RSD &amp; disco, yellow caution directory, orange dual-source). Match NEC edition adopted by <strong>{{ meta.ahj or 'AHJ' }}</strong>.
-        </div>
+    <div class="main" style="overflow:hidden;min-height:0">
+      <div class="sld-wrap" style="flex:1;padding:4px;background:#fff;overflow:hidden">
+        {{ svg_labels }}
       </div>
     </div>
+    
     {{ customer_rail('WARNING LABELS & PLACARDS', 'PV-6') }}
   </div>
   <div class="footer">
