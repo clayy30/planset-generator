@@ -16,8 +16,9 @@ from backend.app.calc_engine import (  # noqa: E402
     max_series_modules,
     voc_temperature_correct,
 )
-from backend.app.presets import duracell_400a_half_home  # noqa: E402
-from backend.app.sld import generate_sld_svg  # noqa: E402
+from backend.app.models import BackupMode, InterconnectionMethod  # noqa: E402
+from backend.app.presets import duracell_400a_half_home, eg4_gridboss_sample  # noqa: E402
+from backend.app.sld import SldRenderError, generate_sld_svg  # noqa: E402
 from backend.app.sld_schemdraw import HAS_SCHEMDRAW, render_schemdraw_sld  # noqa: E402
 from backend.app.calcs import compute_system  # noqa: E402
 
@@ -55,13 +56,62 @@ def test_schemdraw_renders_svg():
     assert len(svg) > 1000
 
 
-def test_generate_sld_prefers_schemdraw():
+def _assert_real_symbols_only(out: str) -> None:
+    """The only acceptable SLD output: the schemdraw wrapper div, containing
+    real schemdraw-rendered SVG. No hand-drawn box/label fallback exists in
+    the codebase any more, but this pins the contract so it can't silently
+    come back.
+    """
+    assert out.startswith('<div class="schemdraw-sld"'), "SLD output must be the schemdraw wrapper, not a fallback diagram"
+    assert "<svg" in out
+
+
+def test_generate_sld_uses_real_symbols_half_home():
     p = duracell_400a_half_home()
     t = compute_system(p)
-    out = generate_sld_svg(p, t)
-    assert "schemdraw" in out.lower() or "<svg" in out
-    # schemdraw path wraps or includes svg paths
-    assert "svg" in out.lower()
+    _assert_real_symbols_only(generate_sld_svg(p, t))
+
+
+def test_generate_sld_uses_real_symbols_gridboss():
+    p = eg4_gridboss_sample()
+    t = compute_system(p)
+    _assert_real_symbols_only(generate_sld_svg(p, t))
+
+
+def test_generate_sld_uses_real_symbols_backfeed():
+    p = duracell_400a_half_home()
+    p.batteries = []
+    p.service.interconnection = InterconnectionMethod.BACKFEED
+    p.service.backup_mode = BackupMode.NONE
+    p.service.num_disconnects = 1
+    t = compute_system(p)
+    _assert_real_symbols_only(generate_sld_svg(p, t))
+
+
+def test_generate_sld_raises_instead_of_falling_back_when_schemdraw_missing(monkeypatch):
+    """If schemdraw isn't available, the SLD must fail loudly - never
+    silently substitute a hand-drawn box diagram.
+    """
+    import backend.app.sld_schemdraw as schemdraw_module
+
+    monkeypatch.setattr(schemdraw_module, "HAS_SCHEMDRAW", False)
+    p = duracell_400a_half_home()
+    t = compute_system(p)
+    with pytest.raises(SldRenderError):
+        generate_sld_svg(p, t)
+
+
+def test_generate_sld_raises_instead_of_falling_back_on_empty_render(monkeypatch):
+    """If schemdraw runs but produces unusable output, that must also raise,
+    not silently fall through to a box diagram.
+    """
+    import backend.app.sld_schemdraw as schemdraw_module
+
+    monkeypatch.setattr(schemdraw_module, "render_schemdraw_sld", lambda project, totals=None: None)
+    p = duracell_400a_half_home()
+    t = compute_system(p)
+    with pytest.raises(SldRenderError):
+        generate_sld_svg(p, t)
 
 
 def test_compute_system_exposes_engine_banner():
