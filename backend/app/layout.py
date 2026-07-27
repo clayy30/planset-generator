@@ -409,54 +409,86 @@ def build_roof_svg(layouts: list[PlaneLayout], north_angle: float = 0) -> str:
 
 
 def build_attachment_svg(struct: StructuralSystem, criteria_frame: str) -> str:
-    """Cross-section attachment detail superior to generic IronRidge callout mill sheets."""
-    return f'''<svg class="sld" viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg">
-  <text x="20" y="24" font-size="13" font-weight="700" font-family="Segoe UI,Arial">ATTACHMENT DETAIL — SECTION THRU RAIL / FLASHING / RAFTER</text>
-  <text x="20" y="40" font-size="10" fill="#444" font-family="Segoe UI,Arial">Install per {struct.racking_mfr} span tables · {struct.attachment_hardware}</text>
+    """Clean cross-section attachment detail — numbered callouts, no overlapping labels."""
+    lag = struct.lag_size
+    emb = struct.lag_embedment_in
+    rail = struct.rail_model
+    foot = struct.attachment_hardware
+    mfr = struct.racking_mfr
+    return f'''<svg class="sld" viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <!-- Title -->
+  <text x="12" y="18" font-size="12" font-weight="700">1  ATTACHMENT DETAIL — SECTION</text>
+  <text x="12" y="32" font-size="9" fill="#444">Scale: NTS · {mfr} {rail} / {foot} · Install per mfr span tables</text>
 
-  <!-- roof slope representation -->
-  <line x1="80" y1="220" x2="820" y2="160" stroke="#888" stroke-width="2"/>
-  <rect x="100" y="200" width="700" height="18" fill="#e8dcc8" stroke="#666" transform="rotate(-5 100 200)"/>
-  <text x="450" y="250" text-anchor="middle" font-size="10" fill="#666" font-family="Segoe UI,Arial">(E) ROOFING · {criteria_frame}</text>
+  <!-- ===== DIAGRAM (left-center) ===== -->
+  <!-- Module -->
+  <rect x="200" y="50" width="220" height="32" fill="#1a5fb4" stroke="#0b3d91" stroke-width="1.5"/>
+  <text x="310" y="70" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">①  PV MODULE</text>
 
-  <!-- rafter -->
-  <rect x="400" y="218" width="28" height="70" fill="#c4a574" stroke="#5c4033" stroke-width="1.5"/>
-  <text x="414" y="310" text-anchor="middle" font-size="9" font-family="Segoe UI,Arial">RAFTER</text>
+  <!-- Clamp -->
+  <rect x="285" y="82" width="50" height="10" fill="#222" stroke="#111"/>
+  <line x1="340" y1="87" x2="400" y2="87" stroke="#111" stroke-width="1"/>
+  <text x="405" y="90" font-size="9" font-weight="600">②  MID / END CLAMP</text>
 
-  <!-- lag -->
-  <line x1="414" y1="200" x2="414" y2="270" stroke="#333" stroke-width="3"/>
-  <text x="430" y="255" font-size="9" font-family="Segoe UI,Arial">{struct.lag_size} LAG</text>
-  <text x="430" y="268" font-size="9" font-family="Segoe UI,Arial">MIN {struct.lag_embedment_in}" THREAD EMBED</text>
+  <!-- Rail -->
+  <rect x="230" y="92" width="160" height="12" fill="#555" stroke="#111"/>
+  <line x1="390" y1="98" x2="430" y2="98" stroke="#111" stroke-width="1"/>
+  <text x="435" y="101" font-size="9" font-weight="600">③  {rail} RAIL</text>
 
-  <!-- flash foot -->
-  <rect x="390" y="188" width="48" height="16" fill="#ddd" stroke="#111" stroke-width="1.5"/>
-  <text x="480" y="200" font-size="10" font-weight="700" font-family="Segoe UI,Arial">FLASHING / FOOT</text>
-  <text x="480" y="212" font-size="9" fill="#444" font-family="Segoe UI,Arial">sealed penetration · match roofing warranty practice</text>
+  <!-- Flash foot -->
+  <rect x="290" y="104" width="40" height="14" fill="#ddd" stroke="#111" stroke-width="1.5"/>
+  <line x1="330" y1="111" x2="400" y2="125" stroke="#111" stroke-width="1"/>
+  <text x="405" y="128" font-size="9" font-weight="600">④  {foot}</text>
+  <text x="405" y="140" font-size="8" fill="#555">flashing · sealed penetration</text>
 
-  <!-- rail -->
-  <rect x="300" y="168" width="240" height="14" fill="#555" stroke="#111" stroke-width="1.5"/>
-  <text x="560" y="178" font-size="10" font-weight="700" font-family="Segoe UI,Arial">{struct.rail_model} RAIL</text>
+  <!-- Lag bolt -->
+  <line x1="310" y1="104" x2="310" y2="175" stroke="#333" stroke-width="3"/>
+  <line x1="310" y1="155" x2="380" y2="170" stroke="#111" stroke-width="1"/>
+  <text x="385" y="168" font-size="9" font-weight="600">⑤  {lag} LAG</text>
+  <text x="385" y="180" font-size="8" fill="#555">min {emb}" thread embed into solid wood</text>
 
-  <!-- clamp + module -->
-  <rect x="380" y="150" width="50" height="12" fill="#222"/>
-  <text x="560" y="158" font-size="9" font-family="Segoe UI,Arial">MID/END CLAMP (LISTED)</text>
-  <rect x="320" y="120" width="200" height="28" fill="#1a5fb4" stroke="#0b3d91" stroke-width="1.5"/>
-  <text x="420" y="138" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Segoe UI,Arial">PV MODULE</text>
+  <!-- Roof deck -->
+  <rect x="180" y="118" width="280" height="14" fill="#e8dcc8" stroke="#666"/>
+  <text x="320" y="128" text-anchor="middle" font-size="8" fill="#555">(E) ROOF DECK / SHINGLES</text>
 
-  <!-- callout bubbles -->
-  <rect x="40" y="60" width="260" height="90" fill="#fff" stroke="#111" stroke-width="1"/>
-  <text x="50" y="78" font-size="10" font-weight="700" font-family="Segoe UI,Arial">STRUCTURAL REQUIREMENTS</text>
-  <text x="50" y="96" font-size="9" font-family="Segoe UI,Arial">• Lag into solid rafter / truss chord only</text>
-  <text x="50" y="110" font-size="9" font-family="Segoe UI,Arial">• Min embedment {struct.lag_embedment_in}" of thread</text>
-  <text x="50" y="124" font-size="9" font-family="Segoe UI,Arial">• Max attachment spacing per PE / mfr tables</text>
-  <text x="50" y="138" font-size="9" font-family="Segoe UI,Arial">• Do not overdrive · seal all penetrations</text>
+  <!-- Rafter -->
+  <rect x="296" y="132" width="28" height="55" fill="#c4a574" stroke="#5c4033" stroke-width="1.5"/>
+  <text x="310" y="205" text-anchor="middle" font-size="9" font-weight="600">⑥  RAFTER / TRUSS</text>
+  <text x="310" y="217" text-anchor="middle" font-size="8" fill="#555">{criteria_frame}</text>
 
-  <rect x="620" y="60" width="250" height="90" fill="#fff" stroke="#111" stroke-width="1"/>
-  <text x="630" y="78" font-size="10" font-weight="700" font-family="Segoe UI,Arial">BONDING</text>
-  <text x="630" y="96" font-size="9" font-family="Segoe UI,Arial">• Integrated rail grounding or WEEB</text>
-  <text x="630" y="110" font-size="9" font-family="Segoe UI,Arial">• Module frames bonded to rail</text>
-  <text x="630" y="124" font-size="9" font-family="Segoe UI,Arial">• XR-LUG / listed lug to EGC</text>
-  <text x="630" y="138" font-size="9" font-family="Segoe UI,Arial">• Continuous EGC to service GES</text>
+  <!-- Leader circles for 1 -->
+  <circle cx="190" cy="66" r="9" fill="#fff" stroke="#111" stroke-width="1.2"/>
+  <text x="190" y="69" text-anchor="middle" font-size="9" font-weight="700">1</text>
+
+  <!-- ===== RIGHT: KEYED NOTES (clean stack, no overlap) ===== -->
+  <rect x="460" y="45" width="250" height="280" fill="#fafafa" stroke="#111" stroke-width="1.2"/>
+  <text x="472" y="64" font-size="10" font-weight="700">KEYED NOTES</text>
+  <line x1="472" y1="70" x2="698" y2="70" stroke="#ccc"/>
+
+  <text x="472" y="90" font-size="9" font-weight="700">1  MODULE</text>
+  <text x="484" y="103" font-size="8" fill="#333">Listed PV module · frame bonded to rail</text>
+
+  <text x="472" y="122" font-size="9" font-weight="700">2  CLAMP</text>
+  <text x="484" y="135" font-size="8" fill="#333">Listed mid/end clamp · torque per mfr</text>
+
+  <text x="472" y="154" font-size="9" font-weight="700">3  RAIL</text>
+  <text x="484" y="167" font-size="8" fill="#333">{mfr} {rail} · splice if row exceeds stick</text>
+
+  <text x="472" y="186" font-size="9" font-weight="700">4  ATTACHMENT</text>
+  <text x="484" y="199" font-size="8" fill="#333">{foot} · flash &amp; seal roof penetration</text>
+
+  <text x="472" y="218" font-size="9" font-weight="700">5  LAG BOLT</text>
+  <text x="484" y="231" font-size="8" fill="#333">{lag} · ≥{emb}" embed · solid wood only</text>
+  <text x="484" y="243" font-size="8" fill="#333">Do not overdrive · no pilot into void</text>
+
+  <text x="472" y="262" font-size="9" font-weight="700">6  STRUCTURE</text>
+  <text x="484" y="275" font-size="8" fill="#333">Rafter/truss per design criteria</text>
+  <text x="484" y="287" font-size="8" fill="#333">Spacing &amp; spans per PE / mfr tables</text>
+
+  <text x="472" y="308" font-size="9" font-weight="700">BONDING</text>
+  <text x="484" y="321" font-size="8" fill="#333">WEEB / integrated · XR-Lug to EGC</text>
+
+  <text x="12" y="360" font-size="8" fill="#555">All hardware listed for the application. Field PE letter when required by AHJ / wind exposure.</text>
 </svg>'''
 
 

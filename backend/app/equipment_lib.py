@@ -195,23 +195,31 @@ def _score_doc(cat: str, path: Path, blob: str, project: ProjectInput) -> tuple[
         if "eg4" in manuf and "eg4" in fname:
             score += 3.0
 
-    # batteries
+    # batteries — require brand alignment (don't attach EG4 PDF to Duracell job)
     for b in project.batteries:
         if b.quantity <= 0:
             continue
         bm = f"{b.manufacturer} {b.model}".lower()
-        if "wallmount" in bm and "wallmount" in fname:
+        brand_ok = False
+        if "eg4" in bm and "eg4" in fname:
+            brand_ok = True
+        if "duracell" in bm and "duracell" in fname:
+            brand_ok = True
+        if "ecoflow" in bm and "ecoflow" in fname:
+            brand_ok = True
+        if brand_ok and "wallmount" in fname:
             score += 8.0
             reasons.append("WallMount battery")
-        if "powerpro" in bm and "powerpro" in fname:
+        if brand_ok and "powerpro" in fname:
             score += 8.0
-        if "eg4" in bm and "eg4" in fname and "battery" in fname:
-            score += 4.0
+            reasons.append("PowerPro battery")
+        if brand_ok and ("battery" in fname or "ess" in fname):
+            score += 5.0
         if "chargeverter" in bm and "chargeverter" in fname:
             score += 7.0
 
-    # disconnect / GridBOSS
-    if project.service.interconnection.value == "gridboss_mid" or "gridboss" in blob:
+    # disconnect / GridBOSS — only if topology uses it
+    if project.service.interconnection.value == "gridboss_mid":
         if "grid" in fname and "boss" in fname:
             score += 10.0
             reasons.append("GridBOSS")
@@ -224,31 +232,119 @@ def _score_doc(cat: str, path: Path, blob: str, project: ProjectInput) -> tuple[
     return score, "; ".join(reasons[:4])
 
 
-def match_equipment(project: ProjectInput, max_docs: int = 14) -> list[SpecDoc]:
+def _part_slot(path: Path, cat: str) -> str:
+    """One physical part type → one slot. Prevents 4× FlashFoot sheets."""
+    n = path.name.lower()
+    if cat == "modules":
+        return "MODULE"
+    if cat == "inverters":
+        return "INVERTER"
+    if cat == "batteries":
+        if "chargeverter" in n:
+            return "CHARGEVERTER"
+        return "BATTERY"
+    if cat == "disconnects":
+        return "DISCONNECT"
+    if cat == "labels":
+        return "LABEL_GUIDE"
+    if cat == "structural":
+        if "engineering" in n or "design" in n:
+            return "STRUCT_GUIDE"
+        return "STRUCT_OTHER"
+    if cat == "racking":
+        if "flashfoot" in n:
+            # Prefer cut sheet over install/tech brief
+            return "ATTACHMENT_FOOT"
+        if "xr100" in n or "xr-100" in n:
+            if "boss" in n or "splice" in n:
+                return "RAIL_SPLICE"
+            return "RAIL"
+        if "xr10" in n and "xr100" not in n:
+            return "RAIL"  # same slot — one rail cut sheet only
+        if "ufo" in n or "clamp" in n:
+            return "CLAMP"
+        if "halo" in n or "ultragrip" in n or "quickmount" in n:
+            return "ALT_MOUNT"
+        if "splice" in n:
+            return "RAIL_SPLICE"
+        return "RACKING_OTHER"
+    return cat.upper()
+
+
+def _slot_preference(path: Path, slot: str) -> float:
+    """Within a slot, prefer cut sheets over manuals/briefs."""
+    n = path.name.lower()
+    bonus = 0.0
+    if "cut_sheet" in n or "cut-sheet" in n or "datasheet" in n or "spec" in n:
+        bonus += 3.0
+    if "install" in n or "manual" in n:
+        bonus -= 2.0
+    if "tech_brief" in n or "brochure" in n:
+        bonus -= 1.5
+    if slot == "ATTACHMENT_FOOT" and "cut_sheet" in n and "flashfoot2" in n:
+        bonus += 5.0  # lag bolt lives on this sheet
+    if slot == "RAIL" and "xr100" in n and "us" in n:
+        bonus += 1.0
+    if slot == "RAIL" and "xr10" in n and "xr100" not in n:
+        bonus -= 0.5  # prefer XR100 when both score
+    if slot == "STRUCT_GUIDE" and "engineering" in n:
+        bonus += 4.0
+    if "pe letter" in n or "bator" in n:
+        bonus -= 10.0
+    return bonus
+
+
+def match_equipment(project: ProjectInput, max_docs: int = 9) -> list[SpecDoc]:
+    """Exactly one PDF per equipment section (module, inverter, foot, rail, …)."""
     blob = _project_blob(project)
-    scored: list[SpecDoc] = []
+    # score every file
+    candidates: list[SpecDoc] = []
     for cat, path in _iter_pdfs() or []:
-        score, reason = _score_doc(cat, path, blob, project)
-        if score < 3.5:
+        base, reason = _score_doc(cat, path, blob, project)
+        # Require a real project match before cut-sheet preference can promote a file
+        if base < 3.5:
             continue
-        scored.append(
+        slot = _part_slot(path, cat)
+        score = base + _slot_preference(path, slot)
+        candidates.append(
             SpecDoc(
                 path=path,
                 category=cat,
                 title=_title_from_path(path),
                 score=score,
-                reason=reason or cat,
+                reason=(reason or cat) + f" · slot={slot}",
             )
         )
-    scored.sort(key=lambda d: (-d.score, d.category, d.title))
 
-    # de-dupe near-identical names, keep best score
-    best: dict[str, SpecDoc] = {}
-    for d in scored:
-        key = re.sub(r"\s+", "", d.title.lower())[:50]
-        if key not in best or d.score > best[key].score:
-            best[key] = d
-    docs = sorted(best.values(), key=lambda d: (-d.score, d.category))
+    # keep best score per slot
+    by_slot: dict[str, SpecDoc] = {}
+    for d in candidates:
+        slot = _part_slot(d.path, d.category)
+        if slot not in by_slot or d.score > by_slot[slot].score:
+            by_slot[slot] = d
+
+    # preferred order for appendix (one of each)
+    order = [
+        "MODULE",
+        "INVERTER",
+        "BATTERY",
+        "DISCONNECT",
+        "RAIL",
+        "ATTACHMENT_FOOT",
+        "CLAMP",
+        "RAIL_SPLICE",
+        "STRUCT_GUIDE",
+        "LABEL_GUIDE",
+        "CHARGEVERTER",
+        "ALT_MOUNT",
+    ]
+    docs: list[SpecDoc] = []
+    for slot in order:
+        if slot in by_slot:
+            docs.append(by_slot.pop(slot))
+    # any remaining slots
+    for slot, d in sorted(by_slot.items(), key=lambda kv: -kv[1].score):
+        docs.append(d)
     return docs[:max_docs]
 
 
@@ -312,12 +408,8 @@ def build_appendix(
         except OSError as e:
             pkg.warnings.append(f"Copy failed {doc.path.name}: {e}")
             continue
-        # more pages for cut sheets (short), fewer for long manuals
-        max_p = 1 if doc.path.stat().st_size > 2_000_000 else 2
-        if "engineering" in doc.path.name.lower():
-            max_p = 2
-        if "label" in doc.category:
-            max_p = 1
+        # ONE page per equipment cut sheet (cleaner appendix)
+        max_p = 1
         imgs = render_pdf_pages(dest, out / "pages", f"doc{i:02d}", max_pages=max_p)
         if imgs:
             pkg.page_images.append((doc, imgs))

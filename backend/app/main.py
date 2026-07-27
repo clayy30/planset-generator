@@ -165,6 +165,36 @@ def api_preview_equipment(project: ProjectInput):
     }
 
 
+@app.get("/api/gis/lookup")
+def api_gis_lookup(
+    line1: str,
+    city: str = "",
+    state: str = "GA",
+    zip: str = "",
+):
+    """Geocode + parcel PIN lookup for title block (public endpoints)."""
+    from .gis import lookup_address
+
+    result = lookup_address(line1=line1, city=city, state=state, zip_code=zip)
+    return result.to_dict()
+
+
+@app.post("/api/gis/enrich")
+def api_gis_enrich(project: ProjectInput):
+    """Fill project address/APN/coords/owner from GIS using current address."""
+    from .gis import apply_to_project_dict, lookup_address
+
+    a = project.meta.address
+    parcel = lookup_address(a.line1, a.city, a.state, a.zip)
+    data = project.model_dump()
+    apply_to_project_dict(data, parcel)
+    enriched = ProjectInput.model_validate(data)
+    return {
+        "project": enriched,
+        "parcel": parcel.to_dict(),
+    }
+
+
 @app.get("/api/presets/duracell-400a")
 def preset_duracell():
     """Seed example: Max Hybrid 15 on 400A dual 200A disco — half-home."""
@@ -178,6 +208,98 @@ def preset_eg4():
     from .presets import eg4_gridboss_sample
 
     return eg4_gridboss_sample()
+
+
+@app.post("/api/import/lumen")
+def api_import_lumen(payload: dict):
+    """Import a Lumen Proposal Studio project → create planset project + optional generate.
+
+    Body: raw ProposalProject JSON, or { "project": ProposalProject, "generate": true }
+    """
+    from .lumen_bridge import lumen_to_project_input
+
+    generate = True
+    body = payload
+    if isinstance(payload, dict) and "project" in payload and (
+        "primaryContact" in (payload.get("project") or {})
+        or "systems" in (payload.get("project") or {})
+    ):
+        body = payload["project"]
+        generate = bool(payload.get("generate", True))
+    elif isinstance(payload, dict) and "generate" in payload and "systems" in payload:
+        generate = bool(payload.get("generate", True))
+        body = {k: v for k, v in payload.items() if k != "generate"}
+
+    try:
+        project = lumen_to_project_input(body)
+    except Exception as e:
+        raise HTTPException(400, f"Import mapping failed: {e}") from e
+
+    rec = storage.save_project(project)
+    result = {
+        "ok": True,
+        "project_id": rec.id,
+        "customer": rec.project.meta.customer_name,
+        "address": rec.project.meta.address.line1,
+        "url_open": f"/?project={rec.id}",
+        "url_api": f"/api/projects/{rec.id}",
+        "url_planset": f"/api/projects/{rec.id}/planset",
+        "warnings": [],
+    }
+
+    if generate:
+        from .equipment_lib import appendix_to_dict, build_appendix
+
+        html = render_planset_html(rec.project, project_id=rec.id, build_spec_appendix=True)
+        path = storage.write_output(rec.id, html)
+        pkg = build_appendix(rec.project, rec.id)
+        totals = compute_system(rec.project)
+        result.update(
+            {
+                "generated": True,
+                "path": str(path),
+                "url_planset": f"/api/projects/{rec.id}/planset",
+                "warnings": totals.warnings,
+                "quality_flags": totals.quality_flags,
+                "appendix": appendix_to_dict(pkg),
+            }
+        )
+    else:
+        result["generated"] = False
+
+    return result
+
+
+@app.get("/api/bridge/info")
+def api_bridge_info():
+    return {
+        "ok": True,
+        "lumen_import": "/api/import/lumen",
+        "method": "POST",
+        "accepts": "Lumen ProposalProject JSON",
+        "returns": "planset project_id + planset HTML URL",
+        "materials": "/api/materials",
+        "cors": "open for local studio integration",
+    }
+
+
+@app.get("/api/materials")
+def api_materials():
+    """Full approved materials catalog for dropdowns (modules, inverters, batteries, racking)."""
+    from .materials_catalog import catalog_payload
+
+    return catalog_payload()
+
+
+@app.get("/api/materials/{category}")
+def api_materials_category(category: str):
+    from .materials_catalog import catalog_payload
+
+    data = catalog_payload()
+    key = category.lower().strip()
+    if key not in data or key in ("version", "note"):
+        raise HTTPException(404, f"Unknown category: {category}")
+    return {"category": key, "items": data[key]}
 
 
 # Frontend static last so API routes win

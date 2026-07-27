@@ -80,6 +80,11 @@ function buildProject() {
         state: val("state"),
         zip: val("zip"),
         apn: val("apn"),
+        county: val("county") || "",
+        owner_of_record: val("owner_of_record") || "",
+        acres: num("acres"),
+        latitude: num("latitude"),
+        longitude: num("longitude"),
       },
       utility: val("utility"),
       ahj: val("ahj"),
@@ -89,7 +94,9 @@ function buildProject() {
       revision_note: "INITIAL RELEASE",
     },
     criteria: {
+      roof_type: val("roof_type") || "comp_shingle",
       roof_frame: val("roof_frame"),
+      stories: num("stories") || 1,
       wind_speed_mph: num("wind_speed_mph") || 130,
       wind_exposure: val("wind_exposure") || "B",
       attic_run_required: true,
@@ -164,15 +171,15 @@ function buildProject() {
       modules_per_plane: planes.map((p) => p.module_count),
       azimuth_deg: planes.map((p) => p.azimuth_deg),
       tilt_deg: planes.map((p) => p.tilt_deg),
-      racking: "IronRidge XR-100 / FlashFoot 2 or AHJ-approved equal",
-      attachment: '5/16" x 4.75" SS lag, min 2-1/2" embedment into rafter',
+      racking: val("rack_label") || "IronRidge XR-100 / FlashFoot 2 or AHJ-approved equal",
+      attachment: window.__rackAttachment || '5/16" x 4.75" SS lag, min 2-1/2" embedment into rafter',
       structural: {
-        racking_mfr: "IronRidge",
-        rail_model: "XR-100",
-        attachment_hardware: "FlashFoot 2",
-        lag_size: '5/16" x 4.75" SS',
+        racking_mfr: window.__rackMfr || "IronRidge",
+        rail_model: window.__rackRail || "XR-100",
+        attachment_hardware: window.__rackAttachment || "FlashFoot 2",
+        lag_size: window.__rackLag || '5/16" x 4.75" SS',
         lag_embedment_in: 2.5,
-        max_attachment_spacing_in: 48,
+        max_attachment_spacing_in: window.__rackSpacing || 48,
         max_dead_load_psf: 5.0,
         span_table_ref: "Manufacturer span tables for site wind/exposure",
       },
@@ -189,6 +196,11 @@ function applyPreset(data) {
   $("state").value = p.meta.address.state;
   $("zip").value = p.meta.address.zip;
   $("apn").value = p.meta.address.apn || "";
+  $("county").value = p.meta.address.county || "";
+  $("owner_of_record").value = p.meta.address.owner_of_record || "";
+  $("acres").value = p.meta.address.acres ?? "";
+  $("latitude").value = p.meta.address.latitude ?? "";
+  $("longitude").value = p.meta.address.longitude ?? "";
   $("utility").value = p.meta.utility || "";
   $("ahj").value = p.meta.ahj || "";
   $("designer").value = p.meta.designer || "";
@@ -206,11 +218,27 @@ function applyPreset(data) {
   $("production_meter").checked = !!p.service.production_meter;
 
   if (p.criteria) {
-    $("roof_frame").value = p.criteria.roof_frame || $("roof_frame").value;
-    $("wind_speed_mph").value = p.criteria.wind_speed_mph ?? 130;
-    $("wind_exposure").value = p.criteria.wind_exposure || "B";
+    setSelectOrValue("roof_frame", p.criteria.roof_frame);
+    setSelectOrValue("wind_speed_mph", p.criteria.wind_speed_mph ?? 130);
+    setSelectOrValue("wind_exposure", p.criteria.wind_exposure || "B");
+    if ($("roof_type") && p.criteria.roof_type) $("roof_type").value = p.criteria.roof_type;
+    if ($("stories") && p.criteria.stories) $("stories").value = String(p.criteria.stories);
   }
-  if (p.ambient) $("record_low_c").value = p.ambient.record_low_c ?? -5;
+  if (p.ambient) setSelectOrValue("record_low_c", p.ambient.record_low_c ?? -5);
+  if (p.meta) {
+    setSelectOrValue("state", p.meta.address?.state || "GA");
+    setSelectOrValue("utility", p.meta.utility);
+    setSelectOrValue("ahj", p.meta.ahj);
+    setSelectOrValue("designer", p.meta.designer);
+    setSelectOrValue("company", p.meta.company);
+    setSelectOrValue("revision", p.meta.revision);
+  }
+  setSelectOrValue("main_breaker_a", p.service?.main_breaker_a);
+  setSelectOrValue("busbar_a", p.service?.busbar_a);
+  setSelectOrValue("num_disconnects", p.service?.num_disconnects);
+  setSelectOrValue("disconnect_rating_a", p.service?.disconnect_rating_a);
+  setSelectOrValue("backfeed_breaker_a", p.service?.backfeed_breaker_a);
+  setSelectOrValue("ac_disco_a", p.service?.ac_disco_a);
 
   const m = p.modules[0];
   $("mod_mfr").value = m.manufacturer;
@@ -244,35 +272,35 @@ function applyPreset(data) {
     $("bat_kwh").value = b.usable_kwh;
   }
 
-  if (p.strings && p.strings.length) {
-    $("str_series").value = p.strings[0].modules_in_series;
-    $("str_par").value = p.strings[0].parallel_strings;
-    $("str_count").value = p.strings.length;
-  }
   if (p.array && p.array.planes && p.array.planes.length) {
     const a = p.array.planes[0];
-    $("p1_name").value = a.name || "ROOF #1";
+    setSelectOrValue("p1_name", a.name || "ROOF #1 (SOUTH)");
     $("p1_mods").value = a.module_count;
     $("p1_eave").value = a.eave_width_ft;
     $("p1_depth").value = a.ridge_depth_ft;
-    $("p1_tilt").value = a.tilt_deg;
-    $("p1_az").value = a.azimuth_deg;
-    $("p1_sb_ridge").value = a.setback_ridge_in ?? 36;
-    $("p1_sb_eave").value = a.setback_eave_in ?? 18;
-    $("p1_sb_l").value = a.setback_left_in ?? 18;
-    $("p1_sb_r").value = a.setback_right_in ?? 18;
-    $("p1_rafter").value = a.rafter_spacing_in ?? 24;
+    setSelectOrValue("p1_tilt", a.tilt_deg);
+    setSelectOrValue("p1_az", a.azimuth_deg);
+    setSelectOrValue("p1_sb_ridge", a.setback_ridge_in ?? 36);
+    setSelectOrValue("p1_sb_eave", a.setback_eave_in ?? 18);
+    setSelectOrValue("p1_sb_l", a.setback_left_in ?? 18);
+    setSelectOrValue("p1_sb_r", a.setback_right_in ?? 18);
+    setSelectOrValue("p1_rafter", a.rafter_spacing_in ?? 24);
     if (p.array.planes[1]) {
       const b = p.array.planes[1];
-      $("p2_name").value = b.name || "ROOF #2";
+      setSelectOrValue("p2_name", b.name || "ROOF #2 (SOUTH)");
       $("p2_mods").value = b.module_count;
       $("p2_eave").value = b.eave_width_ft;
       $("p2_depth").value = b.ridge_depth_ft;
-      $("p2_tilt").value = b.tilt_deg;
-      $("p2_az").value = b.azimuth_deg;
+      setSelectOrValue("p2_tilt", b.tilt_deg);
+      setSelectOrValue("p2_az", b.azimuth_deg);
     } else {
       $("p2_mods").value = 0;
     }
+  }
+  if (p.strings && p.strings.length) {
+    setSelectOrValue("str_series", p.strings[0].modules_in_series);
+    setSelectOrValue("str_par", p.strings[0].parallel_strings);
+    setSelectOrValue("str_count", p.strings.length);
   }
   updateSnapshot();
 }
@@ -420,6 +448,190 @@ async function loadProjects() {
   }
 }
 
+/** Set select value; if missing option, leave as-is or add temporary option */
+function setSelectOrValue(id, value) {
+  const el = $(id);
+  if (!el || value === undefined || value === null || value === "") return;
+  const v = String(value);
+  if (el.tagName === "SELECT") {
+    const exists = Array.from(el.options).some((o) => o.value === v);
+    if (!exists) {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      el.appendChild(opt);
+    }
+    el.value = v;
+  } else {
+    el.value = v;
+  }
+}
+
+/** Approved materials catalog from /api/materials */
+let MATERIALS = { modules: [], inverters: [], batteries: [], racking: [] };
+
+async function loadMaterialsCatalog() {
+  try {
+    const data = await fetch("/api/materials").then((r) => r.json());
+    MATERIALS = data;
+    fillSelect(
+      "mod_catalog",
+      data.modules || [],
+      (m) => m.id,
+      (m) => m.label || `${m.manufacturer} ${m.model}`
+    );
+    fillSelect(
+      "inv_catalog",
+      data.inverters || [],
+      (m) => m.id,
+      (m) => m.label || `${m.manufacturer} ${m.model}`
+    );
+    fillSelect(
+      "bat_catalog",
+      data.batteries || [],
+      (m) => m.id,
+      (m) => m.label || `${m.manufacturer} ${m.model}`
+    );
+    fillSelect(
+      "rack_catalog",
+      data.racking || [],
+      (m) => m.id,
+      (m) => m.label || `${m.manufacturer} ${m.rail_model}`
+    );
+
+    // Default selections if empty
+    if ($("mod_catalog") && !$("mod_catalog").value && data.modules?.[0]) {
+      $("mod_catalog").value = data.modules[0].id;
+      applyModuleFromCatalog(data.modules[0].id);
+    }
+    if ($("inv_catalog") && !$("inv_catalog").value) {
+      const dpc = (data.inverters || []).find((i) => i.id === "dpc-max-hybrid-15");
+      if (dpc) {
+        $("inv_catalog").value = dpc.id;
+        applyInverterFromCatalog(dpc.id);
+      }
+    }
+    if ($("bat_catalog") && data.batteries?.length) {
+      const dpcBat =
+        data.batteries.find((b) => b.id === "dpc-stack-15-30") || data.batteries[0];
+      $("bat_catalog").value = dpcBat.id;
+      applyBatteryFromCatalog(dpcBat.id);
+    }
+    if ($("rack_catalog") && data.racking?.[0]) {
+      $("rack_catalog").value = data.racking[0].id;
+      applyRackingFromCatalog(data.racking[0].id);
+    }
+
+    $("mod_catalog")?.addEventListener("change", (e) =>
+      applyModuleFromCatalog(e.target.value)
+    );
+    $("inv_catalog")?.addEventListener("change", (e) =>
+      applyInverterFromCatalog(e.target.value)
+    );
+    $("bat_catalog")?.addEventListener("change", (e) =>
+      applyBatteryFromCatalog(e.target.value)
+    );
+    $("rack_catalog")?.addEventListener("change", (e) =>
+      applyRackingFromCatalog(e.target.value)
+    );
+    updateSnapshot();
+  } catch (e) {
+    console.warn("Materials catalog failed", e);
+  }
+}
+
+function fillSelect(id, items, valueFn, labelFn) {
+  const el = $(id);
+  if (!el) return;
+  const keep = el.value;
+  el.innerHTML = `<option value="">— Select —</option>`;
+  items.forEach((it) => {
+    const opt = document.createElement("option");
+    opt.value = valueFn(it);
+    opt.textContent = labelFn(it);
+    el.appendChild(opt);
+  });
+  if (keep) el.value = keep;
+}
+
+function applyModuleFromCatalog(id) {
+  const m = (MATERIALS.modules || []).find((x) => x.id === id);
+  if (!m) return;
+  $("mod_mfr").value = m.manufacturer;
+  $("mod_model").value = m.model;
+  $("mod_pmax").value = m.pmax_w;
+  $("mod_vmp").value = m.vmp;
+  $("mod_imp").value = m.imp;
+  $("mod_voc").value = m.voc;
+  $("mod_isc").value = m.isc;
+  $("mod_coeff").value = m.voc_temp_coeff_pct_per_c;
+  if ($("mod_spec")) $("mod_spec").value = m.spec_sheet || "(no local PDF linked)";
+  updateSnapshot();
+}
+
+function applyInverterFromCatalog(id) {
+  const inv = (MATERIALS.inverters || []).find((x) => x.id === id);
+  if (!inv) return;
+  $("inv_mfr").value = inv.manufacturer;
+  $("inv_model").value = inv.model;
+  $("inv_qty").value = inv.quantity_default || 1;
+  $("inv_w").value = inv.continuous_ac_w;
+  $("inv_a").value = inv.continuous_ac_a;
+  $("inv_max_pv").value = inv.max_pv_w ?? "";
+  $("inv_max_voc").value = inv.max_voc ?? "";
+  $("inv_mppt").value = inv.mppt_count ?? 1;
+  $("inv_imp_mppt").value = inv.max_imp_per_mppt ?? "";
+  $("inv_pass").value = inv.passthrough_a ?? "";
+  $("inv_listing").value = inv.listing || "UL 1741";
+  updateSnapshot();
+}
+
+function applyBatteryFromCatalog(id) {
+  const b = (MATERIALS.batteries || []).find((x) => x.id === id);
+  if (!b) return;
+  $("bat_mfr").value = b.manufacturer === "—" ? "" : b.manufacturer;
+  $("bat_model").value = b.model === "None" ? "" : b.model;
+  $("bat_qty").value = b.usable_kwh > 0 ? 1 : 0;
+  $("bat_kwh").value = b.usable_kwh || 0;
+  updateSnapshot();
+}
+
+function applyRackingFromCatalog(id) {
+  const r = (MATERIALS.racking || []).find((x) => x.id === id);
+  if (!r) return;
+  if ($("rack_label")) $("rack_label").value = r.label;
+  window.__rackMfr = r.manufacturer;
+  window.__rackRail = r.rail_model;
+  window.__rackAttachment = r.attachment;
+  window.__rackLag = r.lag_size;
+  window.__rackSpacing = r.max_attachment_spacing_in;
+  updateSnapshot();
+}
+
+function syncCatalogSelectsFromFields() {
+  const modModel = ($("mod_model")?.value || "").toLowerCase();
+  const invModel = ($("inv_model")?.value || "").toLowerCase();
+  const batModel = ($("bat_model")?.value || "").toLowerCase();
+  const mod = (MATERIALS.modules || []).find(
+    (m) =>
+      m.model.toLowerCase() === modModel ||
+      (m.keywords || []).some((k) => modModel.includes(k))
+  );
+  if (mod && $("mod_catalog")) $("mod_catalog").value = mod.id;
+  const inv = (MATERIALS.inverters || []).find(
+    (m) =>
+      m.model.toLowerCase() === invModel ||
+      (m.keywords || []).some((k) => invModel.includes(k))
+  );
+  if (inv && $("inv_catalog")) $("inv_catalog").value = inv.id;
+  const bat = (MATERIALS.batteries || []).find(
+    (m) =>
+      m.model.toLowerCase() === batModel ||
+      (m.keywords || []).some((k) => batModel.includes(k))
+  );
+  if (bat && $("bat_catalog")) $("bat_catalog").value = bat.id;
+}
+
 function wire() {
   document.querySelectorAll(".steps button").forEach((btn) => {
     btn.addEventListener("click", () => setStep(Number(btn.dataset.step)));
@@ -441,11 +653,65 @@ function wire() {
   $("btn-preset-duracell").onclick = async () => {
     const p = await fetch("/api/presets/duracell-400a").then((r) => r.json());
     applyPreset(p);
+    syncCatalogSelectsFromFields();
   };
   $("btn-preset-eg4").onclick = async () => {
     const p = await fetch("/api/presets/eg4-gridboss").then((r) => r.json());
     applyPreset(p);
+    syncCatalogSelectsFromFields();
   };
+  $("btn-gis").onclick = async () => {
+    const box = $("gis-status");
+    box.style.display = "block";
+    box.textContent = "Querying GIS (geocode + county parcel layers)…";
+    try {
+      const q = new URLSearchParams({
+        line1: val("line1"),
+        city: val("city"),
+        state: val("state"),
+        zip: val("zip"),
+      });
+      const res = await fetch("/api/gis/lookup?" + q.toString());
+      const data = await res.json();
+      if (!res.ok) throw new Error(JSON.stringify(data));
+      if (data.line1) $("line1").value = data.line1;
+      if (data.city) $("city").value = data.city;
+      if (data.state && data.state.length <= 2) $("state").value = data.state;
+      if (data.zip) $("zip").value = data.zip;
+      if (data.apn) $("apn").value = data.apn;
+      if (data.county) $("county").value = data.county;
+      if (data.owner) {
+        $("owner_of_record").value = data.owner;
+        if (!$("customer_name").value || $("customer_name").value === "Sample Customer") {
+          $("customer_name").value = data.owner;
+        }
+      }
+      if (data.acres != null) $("acres").value = data.acres;
+      if (data.latitude != null) $("latitude").value = data.latitude;
+      if (data.longitude != null) $("longitude").value = data.longitude;
+      if (data.county) $("ahj").value = data.county;
+      box.textContent = JSON.stringify(
+        {
+          matched: data.matched_address,
+          apn: data.apn,
+          owner: data.owner,
+          county: data.county,
+          acres: data.acres,
+          lat: data.latitude,
+          lon: data.longitude,
+          source: data.source,
+          warnings: data.warnings,
+        },
+        null,
+        2
+      );
+      updateSnapshot();
+    } catch (e) {
+      box.textContent = "GIS lookup failed: " + e.message;
+    }
+  };
+
+  loadMaterialsCatalog();
 
   [
     "project_name",
